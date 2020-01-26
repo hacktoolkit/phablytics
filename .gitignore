@@ -1,5 +1,6 @@
 # general things to ignore
 *~
+.env*
 
 ##
 # Python ignores
@@ -68,4 +69,5 @@ target/
 .ipynb_checkpoints
 
 # local-only files
+venv/
 local_settings.py
