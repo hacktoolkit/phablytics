@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 # Python Standard Library Imports
+import datetime
 import json
 
 from phabricator import Phabricator
@@ -14,6 +15,10 @@ from .classes import ProjectColumn
 from .classes import Repo
 from .classes import Revision
 from .classes import User
+
+
+##
+# Phabricator / Conduit Utils
 
 
 PHAB = Phabricator()
@@ -100,6 +105,21 @@ def fetch_differential_revisions(query_key, modified_after_dt=None, modified_bef
 
 ##
 # Maniphest
+
+
+def get_maniphest_tasks_by_owners(owner_phids):
+    constraints = {
+        'assigned' : owner_phids,
+    }
+    results = PHAB.maniphest.search(
+        constraints=constraints
+    )
+    tasks = [
+        Maniphest(task_data)
+        for task_data
+        in results.data
+    ]
+    return tasks
 
 
 def get_maniphest_tasks_by_project_name(project_name, column_phids=None, order=None):
@@ -201,6 +221,21 @@ def get_repos_by_phid(phids):
 
 ##
 # Users
+
+
+def get_users_by_username(usernames):
+    constraints = {
+        'usernames': usernames,
+    }
+    results = PHAB.user.search(
+        constraints=constraints
+    )
+    users = [
+        User(user_data)
+        for user_data
+        in results.data
+    ]
+    return users
 
 
 def get_users_by_phid(phids):

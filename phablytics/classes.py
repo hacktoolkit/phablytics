@@ -1,6 +1,12 @@
+# Python Standard Library Imports
+import datetime
+
 # Local Imports
 from .settings import PHABRICATOR_INSTANCE_BASE_URL
 from .settings import REVISION_ACCEPTANCE_THRESHOLD
+
+
+DATE_FORMAT = '%Y-%m-%d'
 
 
 class PhabricatorEntity:
@@ -25,10 +31,22 @@ class PhabricatorEntity:
         type_ = self.raw_data['type']
         return type_
 
+    ##
+    # Fields attributes
+
     @property
     def created_ts(self):
         ts = self.fields['dateCreated']
         return ts
+
+    @property
+    def created_at(self):
+        created_at = datetime.datetime.fromtimestamp(self.created_ts)
+        return created_at
+
+    @property
+    def created_at_str(self):
+        return self.created_at.strftime(DATE_FORMAT)
 
     @property
     def modified_ts(self):
@@ -36,9 +54,44 @@ class PhabricatorEntity:
         return ts
 
     @property
+    def modified_at(self):
+        modified_at = datetime.datetime.fromtimestamp(self.modified_ts)
+        return modified_at
+
+    @property
+    def modified_at_str(self):
+        return self.modified_at(DATE_FORMAT)
+
+    @property
+    def closed_ts(self):
+        ts = self.fields['dateClosed']
+        return ts
+
+    @property
+    def closed_at(self):
+        closed_at = datetime.datetime.fromtimestamp(self.closed_ts) if self.closed_ts else None
+        return closed_at
+
+    @property
+    def closed_at_str(self):
+        closed_at = self.closed_at
+        value = closed_at.strftime(DATE_FORMAT) if closed_at else ''
+        return value
+
+    @property
     def name(self):
         name = self.fields['name']
         return name
+
+    @property
+    def status(self):
+        status = self.fields['status']
+        return status
+
+    @property
+    def status_value(self):
+        status_value = self.status['value']
+        return status_value
 
     ##
     # Top-level attributes
@@ -67,6 +120,14 @@ class Maniphest(PhabricatorEntity):
     def url(self):
         url = f'{PHABRICATOR_INSTANCE_BASE_URL}/{self.task_id}'
         return url
+
+    ##
+    # Fields attributes
+
+    @property
+    def owner_phid(self):
+        owner_phid = self.fields['ownerPHID']
+        return owner_phid
 
 
 class Project(PhabricatorEntity):
@@ -141,16 +202,6 @@ class Revision(PhabricatorEntity):
         return phids
 
     @property
-    def status(self):
-        status = self.fields['status']
-        return status
-
-    @property
-    def status_value(self):
-        status_value = self.status['value']
-        return status_value
-
-    @property
     def is_accepted(self):
         is_accepted = self.status_value == 'accepted'
         return is_accepted
@@ -216,3 +267,8 @@ class User(PhabricatorEntity):
     def name(self):
         name = self.raw_data['name']
         return name
+
+    @property
+    def username(self):
+        username = self.fields['username']
+        return username

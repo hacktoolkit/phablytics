@@ -2,6 +2,7 @@
 import datetime
 
 # Local Imports
+from .settings import RECENT_TASKS_REPORT_USERNAMES
 from .settings import REVISION_AGE_THRESHOLD_DAYS
 from .settings import REVISION_STATUS_REPORT_QUERY_KEY
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_COLUMN_NAMES
@@ -10,10 +11,12 @@ from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_EXCLUDED_TASKS
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_ORDER
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_PROJECT_NAME
 from .utils import fetch_differential_revisions
+from .utils import get_maniphest_tasks_by_owners
 from .utils import get_maniphest_tasks_by_project_name
 from .utils import get_project_columns_by_project_name
 from .utils import get_repos_by_phid
 from .utils import get_users_by_phid
+from .utils import get_users_by_username
 
 
 def get_report_types():
@@ -22,11 +25,22 @@ def get_report_types():
     report_types = {
         'RevisionStatus' : RevisionStatusReport,
         'UpcomingProjectTasksDue' : UpcomingProjectTasksDueReport,
+        'RecentTasks' : RecentTasksReport,
     }
     return report_types
 
 
-class RevisionStatusReport:
+class PhablyticsReport:
+    """This is the base class for other Phablytics reports.
+    """
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def generate_report(self, *args, **kwargs):
+        pass
+
+
+class RevisionStatusReport(PhablyticsReport):
     """The Revision Status Report shows a list of Diffs being worked on by a team,
     and outputs them based on their acceptance/needs review status
     """
@@ -129,7 +143,7 @@ class RevisionStatusReport:
         return report_string
 
 
-class UpcomingProjectTasksDueReport:
+class UpcomingProjectTasksDueReport(PhablyticsReport):
     """The Upcoming Project Tasks Due Report shows a list of tasks ordered by creation date or custom key.
     """
     def __init__(self, columns=None, order=None):
@@ -185,4 +199,54 @@ class UpcomingProjectTasksDueReport:
             report.append(f'{count}. _{task.name}_ (<{task.url}|{task.task_id}>)')
 
         report_string = '\n'.join(report).encode('utf-8').decode('utf-8')
+        return report_string
+
+
+class RecentTasksReport(PhablyticsReport):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def generate_report(self):
+        usernames = RECENT_TASKS_REPORT_USERNAMES
+        users = get_users_by_username(usernames)
+        users_lookup = {
+            user.phid: user
+            for user
+            in users
+        }
+        user_phids = list(users_lookup.keys())
+
+        maniphest_tasks = get_maniphest_tasks_by_owners(user_phids)
+
+        report = []
+
+        def _header_row(fmt, labels):
+            s = fmt % tuple(labels)
+            return s
+
+        def _dash_row(fmt, ncols):
+            dashes = '-' * 30
+            tu = tuple([dashes] * ncols)
+            s = fmt % tu
+            s = s.replace(' | ', '-+-')
+            return s
+
+        fmt = '%-6.6s | %-12.12s | %-10.10s | %-10.10s | %-10.10s | %s'
+        report.append(_header_row(fmt, 'ID OWNER CREATED CLOSED STATUS NAME'.split()))
+        report.append(_dash_row(fmt, 6))
+
+        for task in maniphest_tasks:
+            cells = [
+                task.task_id,
+                users_lookup[task.owner_phid].username,
+                task.created_at_str,
+                task.closed_at_str,
+                task.status_value,
+                task.name,
+            ]
+
+            report.append(fmt % tuple(cells))
+
+        report_string = '```\n%s\n```' % '\n'.join(report)
+
         return report_string
