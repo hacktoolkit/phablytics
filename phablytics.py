@@ -1,8 +1,11 @@
 # Python Standard Library Imports
 import argparse
+import pprint
 
 from htk import slack_message
 from phablytics.reports import RevisionStatusReport
+from phablytics.utils import adhoc
+from phablytics.utils import whoami
 
 
 class PhablyticsCLI:
@@ -15,7 +18,14 @@ class PhablyticsCLI:
 
     def execute(self):
         self.parse_args()
-        if self.report_type:
+
+        if self.adhoc:
+            response = adhoc(self.adhoc, method_args=self.adhoc_args)
+            pprint.pprint(response)
+        elif self.whoami:
+            user = whoami()
+            pprint.pprint(user.raw_data)
+        elif self.report_type:
             report_class = self.REPORT_TYPES.get(self.report_type)
             if report_class:
                 report = report_class().generate_report()
@@ -30,17 +40,33 @@ class PhablyticsCLI:
         arg_parser.add_argument(
             '-r', '--report_type',
             help=f"Report type (options: {', '.join(self.REPORT_TYPES.keys())}).",
-            required=True
-        )
-        arg_parser.add_argument(
-            '--slack',
-            help='Output report to Slack.',
-            action='store_true',
             required=False
         )
         arg_parser.add_argument(
-            '--slack_channel',
+            '--slack',
+            action='store_true',
+            help='Output report to Slack.',
+            required=False
+        )
+        arg_parser.add_argument(
+            '--slack-channel',
             help='Slack channel to use for displaying report.',
+            required=False
+        )
+        arg_parser.add_argument(
+            '-a', '--adhoc',
+            help='Runs an adhoc Conduit method.',
+            required=False
+        )
+        arg_parser.add_argument(
+            '--adhoc-args',
+            help='Specifies arguments for Conduit method, used iwth --adhoc.',
+            required=False
+        )
+        arg_parser.add_argument(
+            '-w', '--whoami',
+            action='store_true',
+            help='Runs whoami',
             required=False
         )
 

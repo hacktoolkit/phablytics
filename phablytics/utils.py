@@ -1,6 +1,9 @@
 # Future Imports
 from __future__ import absolute_import
 
+# Python Standard Library Imports
+import json
+
 from phabricator import Phabricator
 
 # Local Imports
@@ -11,6 +14,57 @@ from .classes import User
 
 
 PHAB = Phabricator()
+
+
+##
+# PHIDs
+
+
+def get_phids(phids, as_object=PhabricatorEntity):
+    """Retrieve objects for arbitrary PHIDs.
+
+    https://secure.phabricator.com/conduit/method/phid.query/
+    """
+    phids = list(set(phids))  # dedup PHIDs
+
+    results = PHAB.phid.query(phids=phids)
+
+    phid_objects_lookup = {
+        phid: as_object(results[phid])
+        for phid
+        in phids
+    }
+
+    return phid_objects_lookup
+
+
+##
+# Adhoc
+
+def adhoc(method_path, method_args=None):
+    """Runs an adhoc Conduit method.
+    """
+    parts = method_path.split('.')
+    f = PHAB
+    for part in parts:
+        if hasattr(f, part):
+            f = getattr(f, part)
+        else:
+            print(f'Bad method_path specified: {method_path}')
+            break
+
+    if method_args:
+        kwargs = json.loads(method_args)
+    else:
+        kwargs = {}
+
+    results = f(**kwargs)
+    response = results.response
+    return response
+
+
+##
+# Differential
 
 
 def fetch_revisions(query_key, modified_after_dt=None, modified_before_dt=None):
@@ -34,22 +88,8 @@ def fetch_revisions(query_key, modified_after_dt=None, modified_before_dt=None):
     return revisions
 
 
-def get_phids(phids, as_object=PhabricatorEntity):
-    """Retrieve objects for arbitrary PHIDs.
-
-    https://secure.phabricator.com/conduit/method/phid.query/
-    """
-    phids = list(set(phids))  # dedup PHIDs
-
-    results = PHAB.phid.query(phids=phids)
-
-    phid_objects_lookup = {
-        phid: as_object(results[phid])
-        for phid
-        in phids
-    }
-
-    return phid_objects_lookup
+##
+# Repos
 
 
 def get_repos_by_phid(phids):
@@ -59,8 +99,22 @@ def get_repos_by_phid(phids):
     return repos_lookup
 
 
+##
+# Users
+
+
 def get_users_by_phid(phids):
     """Get users mapping by PHID
     """
     users_lookup = get_phids(phids, as_object=User)
     return users_lookup
+
+
+def whoami():
+    """Retrieve information about the logged-in user.
+
+    https://secure.phabricator.com/conduit/method/user.whoami/
+    """
+    results = PHAB.user.whoami()
+    user = User(results.response)
+    return user

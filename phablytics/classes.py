@@ -29,6 +29,10 @@ class PhabricatorEntity:
         return attachments
 
 
+class Project(PhabricatorEntity):
+    pass
+
+
 class Repo(PhabricatorEntity):
     ##
     # Primary attributes
@@ -44,16 +48,6 @@ class Repo(PhabricatorEntity):
     @property
     def readable_name(self):
         name = self.full_name.split(' ')[1]
-        return name
-
-
-class User(PhabricatorEntity):
-    ##
-    # Primary attributes
-
-    @property
-    def name(self):
-        name = self.raw_data['name']
         return name
 
 
@@ -178,3 +172,13 @@ class Revision(PhabricatorEntity):
         title = self.title
         is_wip = title.startswith('WIP') or title.startswith('[WIP]') or title.endswith('WIP')
         return is_wip
+
+
+class User(PhabricatorEntity):
+    ##
+    # Primary attributes
+
+    @property
+    def name(self):
+        name = self.raw_data['name']
+        return name
