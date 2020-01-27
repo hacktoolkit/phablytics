@@ -3,18 +3,14 @@ import argparse
 import pprint
 
 from htk import slack_message
-from phablytics.reports import RevisionStatusReport
+from phablytics.reports import get_report_types
 from phablytics.utils import adhoc
 from phablytics.utils import whoami
 
 
 class PhablyticsCLI:
-    REPORT_TYPES = {
-        'RevisionStatus' : RevisionStatusReport,
-    }
-
     def __init__(self):
-        pass
+        self.report_types = get_report_types()
 
     def execute(self):
         self.parse_args()
@@ -28,7 +24,7 @@ class PhablyticsCLI:
             user = whoami()
             pprint.pprint(user.raw_data)
         elif self.report_type:
-            report_class = self.REPORT_TYPES.get(self.report_type)
+            report_class = self.report_types.get(self.report_type)
             if report_class:
                 report = report_class().generate_report()
                 if self.slack:
@@ -39,9 +35,11 @@ class PhablyticsCLI:
 
     def parse_args(self):
         arg_parser = argparse.ArgumentParser(description='Phablytics report generator.')
+        report_type_choices = sorted(self.report_types.keys())
         arg_parser.add_argument(
             '-r', '--report_type',
-            help=f"Report type (options: {', '.join(self.REPORT_TYPES.keys())}).",
+            help=f"Report type.",
+            choices=report_type_choices,
             required=False
         )
         arg_parser.add_argument(
@@ -74,7 +72,7 @@ class PhablyticsCLI:
         arg_parser.add_argument(
             '-w', '--whoami',
             action='store_true',
-            help='Runs whoami',
+            help='Runs whoami.',
             required=False
         )
 

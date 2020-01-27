@@ -10,6 +10,7 @@ from phabricator import Phabricator
 from .classes import Maniphest
 from .classes import PhabricatorEntity
 from .classes import Project
+from .classes import ProjectColumn
 from .classes import Repo
 from .classes import Revision
 from .classes import User
@@ -51,6 +52,8 @@ def get_phids(phids, as_object=PhabricatorEntity):
 def adhoc(method_path, method_args=None):
     """Runs an adhoc Conduit method.
     """
+    update_interfaces()
+
     parts = method_path.split('.')
     f = PHAB
     for part in parts:
@@ -99,7 +102,7 @@ def fetch_differential_revisions(query_key, modified_after_dt=None, modified_bef
 # Maniphest
 
 
-def get_maniphest_tasks_by_project_name(project_name):
+def get_maniphest_tasks_by_project_name(project_name, column_phids=None, order=None):
     """Get Maniphest tasks for a project
 
     https://secure.phabricator.com/conduit/method/maniphest.search/
@@ -114,15 +117,22 @@ def get_maniphest_tasks_by_project_name(project_name):
             'open',
         ],
     }
-    order = [
-        '-id',  # oldest first
-    ]
+    if column_phids:
+        constraints['columnPHIDs'] = column_phids
+    if order is None:
+        order = [
+            '-id',  # oldest first
+        ]
 
     results = PHAB.maniphest.search(
         constraints=constraints,
         order=order
     )
-    tasks = [Maniphest(task_data) for task_data in results.data]
+    tasks = [
+        Maniphest(task_data)
+        for task_data
+        in results.data
+    ]
     return tasks
 
 
@@ -151,21 +161,31 @@ def get_project_by_name(project_name):
     return project
 
 
-def get_project_columns_by_project_name(project_name):
+def get_project_columns_by_project_name(project_name, column_names=None):
     """Get information about workboard columns by project
 
     https://secure.phabricator.com/conduit/method/project.column.search/
     """
     update_interfaces()
+
     project = get_project_by_name(project_name)
 
     constraints = {
-        'phids': [project.phid],
+        'projects': [
+            project.phid,
+        ],
     }
     results = PHAB.project.column.search(constraints=constraints)
+    project_columns = [
+        ProjectColumn(column_data)
+        for column_data
+        in results.data
+    ]
+    if column_names:
+        project_columns = list(filter(lambda column: column.name in column_names, project_columns))
 
-    project_columns = results.data
     return project_columns
+
 
 
 ##

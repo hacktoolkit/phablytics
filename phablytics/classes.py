@@ -35,6 +35,11 @@ class PhabricatorEntity:
         ts = self.fields['dateModified']
         return ts
 
+    @property
+    def name(self):
+        name = self.fields['name']
+        return name
+
     ##
     # Top-level attributes
 
@@ -50,10 +55,25 @@ class PhabricatorEntity:
 
 
 class Maniphest(PhabricatorEntity):
-    pass
+    ##
+    # Primary attributes
+
+    @property
+    def task_id(self):
+        formatted_task_id = f'T{self.id_}'
+        return formatted_task_id
+
+    @property
+    def url(self):
+        url = f'{PHABRICATOR_INSTANCE_BASE_URL}/{self.task_id}'
+        return url
 
 
 class Project(PhabricatorEntity):
+    pass
+
+
+class ProjectColumn(PhabricatorEntity):
     pass
 
 

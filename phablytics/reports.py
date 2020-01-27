@@ -4,9 +4,26 @@ import datetime
 # Local Imports
 from .settings import REVISION_AGE_THRESHOLD_DAYS
 from .settings import REVISION_STATUS_REPORT_QUERY_KEY
+from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_COLUMN_NAMES
+from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_CUSTOM_EXCLUSIONS
+from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_EXCLUDED_TASKS
+from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_ORDER
+from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_PROJECT_NAME
 from .utils import fetch_differential_revisions
+from .utils import get_maniphest_tasks_by_project_name
+from .utils import get_project_columns_by_project_name
 from .utils import get_repos_by_phid
 from .utils import get_users_by_phid
+
+
+def get_report_types():
+    """Returns a mapping of report types to classes
+    """
+    report_types = {
+        'RevisionStatus' : RevisionStatusReport,
+        'UpcomingProjectTasksDue' : UpcomingProjectTasksDueReport,
+    }
+    return report_types
 
 
 class RevisionStatusReport:
@@ -107,6 +124,65 @@ class RevisionStatusReport:
                 count += 1
                 _format_and_append_revision_to_report(revision, count)
             report.append('')
+
+        report_string = '\n'.join(report).encode('utf-8').decode('utf-8')
+        return report_string
+
+
+class UpcomingProjectTasksDueReport:
+    """The Upcoming Project Tasks Due Report shows a list of tasks ordered by creation date or custom key.
+    """
+    def __init__(self, columns=None, order=None):
+        if order is None:
+            order = UPCOMING_PROJECT_TASKS_DUE_REPORT_ORDER
+
+        self.project_name = UPCOMING_PROJECT_TASKS_DUE_REPORT_PROJECT_NAME
+        self.columns = UPCOMING_PROJECT_TASKS_DUE_REPORT_COLUMN_NAMES
+
+        #self.project = project
+        #self.columns = columns
+        self.order = order
+
+    def generate_report(self):
+        if self.columns:
+            columns = get_project_columns_by_project_name(self.project_name, self.columns)
+            column_phids = [
+                column.phid
+                for column
+                in columns
+            ]
+        else:
+            column_phids = []
+
+        maniphest_tasks = get_maniphest_tasks_by_project_name(
+            self.project_name,
+            column_phids=column_phids,
+            order=self.order,
+        )
+
+        def _should_include(task):
+            #import json
+            #print(json.dumps(task.raw_data))
+            should_include = (
+                task.id_ not in UPCOMING_PROJECT_TASKS_DUE_REPORT_EXCLUDED_TASKS
+                and not any([
+                    custom_exclusion(task)
+                    for custom_exclusion
+                    in UPCOMING_PROJECT_TASKS_DUE_REPORT_CUSTOM_EXCLUSIONS
+                ])
+            )
+            return should_include
+
+        tasks = filter(_should_include, maniphest_tasks)
+
+        report = []
+        count = 0
+
+        report.append(f"*{self.project_name} - {', '.join(self.columns)} - Tasks Due Soon*")
+
+        for task in tasks:
+            count += 1
+            report.append(f'{count}. _{task.name}_ (<{task.url}|{task.task_id}>)')
 
         report_string = '\n'.join(report).encode('utf-8').decode('utf-8')
         return report_string
