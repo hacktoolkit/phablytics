@@ -19,7 +19,9 @@ class PhablyticsCLI:
     def execute(self):
         self.parse_args()
 
-        if self.adhoc:
+        if self.test:
+            pass
+        elif self.adhoc:
             response = adhoc(self.adhoc, method_args=self.adhoc_args)
             pprint.pprint(response)
         elif self.whoami:
@@ -54,13 +56,19 @@ class PhablyticsCLI:
             required=False
         )
         arg_parser.add_argument(
+            '-t', '--test',
+            action='store_true',
+            help='Test. Development use only.',
+            required=False
+        )
+        arg_parser.add_argument(
             '-a', '--adhoc',
             help='Runs an adhoc Conduit method.',
             required=False
         )
         arg_parser.add_argument(
             '--adhoc-args',
-            help='Specifies arguments for Conduit method, used iwth --adhoc.',
+            help='Specifies arguments for Conduit method, used with --adhoc.',
             required=False
         )
         arg_parser.add_argument(
