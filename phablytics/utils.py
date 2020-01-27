@@ -7,13 +7,20 @@ import json
 from phabricator import Phabricator
 
 # Local Imports
+from .classes import Maniphest
 from .classes import PhabricatorEntity
+from .classes import Project
 from .classes import Repo
 from .classes import Revision
 from .classes import User
 
 
 PHAB = Phabricator()
+
+
+def update_interfaces():
+    PHAB.update_interfaces()
+    whoami()
 
 
 ##
@@ -67,7 +74,7 @@ def adhoc(method_path, method_args=None):
 # Differential
 
 
-def fetch_revisions(query_key, modified_after_dt=None, modified_before_dt=None):
+def fetch_differential_revisions(query_key, modified_after_dt=None, modified_before_dt=None):
     """Get revisions for `query_key` between `modified_after_dt` and `modified_before_dt`
 
     https://secure.phabricator.com/conduit/method/differential.revision.search/
@@ -86,6 +93,79 @@ def fetch_revisions(query_key, modified_after_dt=None, modified_before_dt=None):
     revisions = [Revision(revision_data) for revision_data in results.data]
 
     return revisions
+
+
+##
+# Maniphest
+
+
+def get_maniphest_tasks_by_project_name(project_name):
+    """Get Maniphest tasks for a project
+
+    https://secure.phabricator.com/conduit/method/maniphest.search/
+    """
+    project = get_project_by_name(project_name)
+
+    constraints = {
+        'projects': [
+            project.phid,
+        ],
+        'statuses': [
+            'open',
+        ],
+    }
+    order = [
+        '-id',  # oldest first
+    ]
+
+    results = PHAB.maniphest.search(
+        constraints=constraints,
+        order=order
+    )
+    tasks = [Maniphest(task_data) for task_data in results.data]
+    return tasks
+
+
+##
+# Projects
+
+
+def get_project_by_name(project_name):
+    """Get a project by name
+
+    https://secure.phabricator.com/conduit/method/project.search/
+    """
+
+    constraints = {
+        'query': project_name.strip(),
+    }
+    results = PHAB.project.search(constraints=constraints)
+    projects = [Project(project_data) for project_data in results.data]
+
+    project = None
+    if len(projects) > 1:
+        raise Exception(f'Multiple projects found for name: {project_name}')
+    else:
+        project = projects[0]
+
+    return project
+
+
+def get_project_columns_by_project_name(project_name):
+    """Get information about workboard columns by project
+
+    https://secure.phabricator.com/conduit/method/project.column.search/
+    """
+    update_interfaces()
+    project = get_project_by_name(project_name)
+
+    constraints = {
+        'phids': [project.phid],
+    }
+    results = PHAB.project.column.search(constraints=constraints)
+
+    project_columns = results.data
+    return project_columns
 
 
 ##

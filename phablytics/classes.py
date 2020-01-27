@@ -15,6 +15,26 @@ class PhabricatorEntity:
         id_ = self.raw_data['id']
         return id_
 
+    @property
+    def phid(self):
+        phid = self.raw_data['phid']
+        return phid
+
+    @property
+    def type_(self):
+        type_ = self.raw_data['type']
+        return type_
+
+    @property
+    def created_ts(self):
+        ts = self.fields['dateCreated']
+        return ts
+
+    @property
+    def modified_ts(self):
+        ts = self.fields['dateModified']
+        return ts
+
     ##
     # Top-level attributes
 
@@ -27,6 +47,10 @@ class PhabricatorEntity:
     def attachments(self):
         attachments = self.raw_data['attachments']
         return attachments
+
+
+class Maniphest(PhabricatorEntity):
+    pass
 
 
 class Project(PhabricatorEntity):
@@ -79,16 +103,6 @@ class Revision(PhabricatorEntity):
     def author_phid(self):
         phid = self.fields['authorPHID']
         return phid
-
-    @property
-    def created_ts(self):
-        ts = self.fields['dateCreated']
-        return ts
-
-    @property
-    def modified_ts(self):
-        ts = self.fields['dateModified']
-        return ts
 
     ##
     # Nested attributes

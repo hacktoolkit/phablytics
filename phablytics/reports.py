@@ -4,7 +4,7 @@ import datetime
 # Local Imports
 from .settings import REVISION_AGE_THRESHOLD_DAYS
 from .settings import REVISION_STATUS_REPORT_QUERY_KEY
-from .utils import fetch_revisions
+from .utils import fetch_differential_revisions
 from .utils import get_repos_by_phid
 from .utils import get_users_by_phid
 
@@ -34,7 +34,10 @@ class RevisionStatusReport:
 
     def generate_report(self):
         date_created = (datetime.datetime.now() - datetime.timedelta(days=REVISION_AGE_THRESHOLD_DAYS)).replace(hour=0, minute=0, second=0)
-        active_revisions = fetch_revisions(REVISION_STATUS_REPORT_QUERY_KEY, modified_after_dt=date_created)
+        active_revisions = fetch_differential_revisions(
+            REVISION_STATUS_REPORT_QUERY_KEY,
+            modified_after_dt=date_created
+        )
 
         revisions_accepted = []
         revisions_todo = []
