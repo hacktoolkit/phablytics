@@ -147,33 +147,26 @@ class RevisionStatusReport(PhablyticsReport):
         report.append('')
 
     def generate_text_report(self):
+        slack_report = self.generate_slack_report()
+
         report = []
+        report.append(slack_report.text)
+        report.append('')
 
-        if len(self.revisions_accepted) > 0:
-            count = 0
-            report.append(f':white_check_mark: *{len(self.revisions_accepted)} Diffs are Accepted and Ready to Land*: _(oldest first)_')
-            for revision in sorted(self.revisions_accepted, key=lambda r: r.modified_ts):
-                count += 1
-                self._format_and_append_revision_to_report(report, revision, count)
-            report.append('')
-
-        if len(self.revisions_todo) > 0:
-            count = 0
-            if len(self.revisions_accepted) > 0:
+        count = 0
+        for attachment in slack_report.attachments:
+            if count > 0:
                 report.append('')
-            else:
-                pass
+            report.append(attachment['pretext'])
+            report.append(attachment['text'])
 
-            report.append(f':warning: *{len(self.revisions_todo)} Diffs Need Review*: _(newest first)_')
-            for revision in sorted(self.revisions_todo, key=lambda r: r.modified_ts, reverse=True):
-                count += 1
-                self._format_and_append_revision_to_report(report, revision, count)
-            report.append('')
+        report_string = '\n'.join(report).encode('utf-8').decode('utf-8',)
 
-        report_string = '\n'.join(report).encode('utf-8').decode('utf-8')
         return report_string
 
     def generate_slack_report(self):
+        """Generates the Revision Status Report with Slack attachments
+        """
         attachments = []
 
         if len(self.revisions_to_review) > 0:
