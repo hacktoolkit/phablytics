@@ -131,12 +131,15 @@ class RevisionStatusReport(PhablyticsReport):
         acceptors = [f'`{self.users_lookup[phid].name}`' for phid in revision.acceptor_phids]
         blockers = [f'`{self.users_lookup[phid].name}`' for phid in revision.blocker_phids]
 
+        MAX_LENGTH = 50
+        revision_title = revision.title if len(revision.title) < MAX_LENGTH else (revision.title[:MAX_LENGTH - 3] + '...')
+
         report.append(
-            f'{count}. _{revision.title}_ (<{revision.url}|{revision.revision_id}>) by `{author.name}` on `{repo.readable_name}`'
+            f'{count}. <{revision.url}|{revision.revision_id}> - `{repo.readable_name}` - _{revision_title}_ by `{author.name}`'
         )
         reviewers_msg = []
         if len(acceptors) > 0:
-            reviewers_msg.append(f":white_check_mark: accepted by {', '.join(acceptors)}")
+            reviewers_msg.append(f":heavy_check_mark: accepted by {', '.join(acceptors)}")
         if len(blockers) > 0:
             if len(reviewers_msg) > 0:
                 reviewers_msg.append('; ')
