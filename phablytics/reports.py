@@ -43,6 +43,9 @@ class PhablyticsReport:
     def __init__(self, as_slack=False, *args, **kwargs):
         self.as_slack = as_slack
 
+    def _prepare_report(self):
+        pass
+
     def generate_report(self, *args, **kwargs):
         self._prepare_report()
 
@@ -263,7 +266,7 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
 
         super(UpcomingProjectTasksDueReport, self).__init__(*args, **kwargs)
 
-    def generate_report(self):
+    def generate_text_report(self):
         if self.columns:
             columns = get_project_columns_by_project_name(self.project_name, self.columns)
             column_phids = [
@@ -306,6 +309,11 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
 
         report_string = '\n'.join(report).encode('utf-8').decode('utf-8')
         return report_string
+
+    def generate_slack_report(self):
+        text_report = self.generate_text_report()
+        report = SlackMessage(text_report, None)
+        return report
 
 
 class RecentTasksReport(PhablyticsReport):
