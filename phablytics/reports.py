@@ -320,7 +320,7 @@ class RecentTasksReport(PhablyticsReport):
     def __init__(self, *args, **kwargs):
         super(RecentTasksReport, self).__init__(*args, **kwargs)
 
-    def generate_report(self):
+    def generate_text_report(self):
         usernames = RECENT_TASKS_REPORT_USERNAMES
         users = get_users_by_username(usernames)
         users_lookup = {
@@ -361,6 +361,12 @@ class RecentTasksReport(PhablyticsReport):
 
             report.append(fmt % tuple(cells))
 
-        report_string = '```\n%s\n```' % '\n'.join(report)
+        report_string = '\n'.join(report)
 
         return report_string
+
+    def generate_slack_report(self):
+        text_report = self.generate_text_report()
+        text = '```\n%s\n```' % text_report
+        report = SlackMessage(text, None)
+        return report
