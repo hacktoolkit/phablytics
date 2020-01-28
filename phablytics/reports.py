@@ -1,8 +1,11 @@
 # Python Standard Library Imports
 import datetime
+import random
+from collections import namedtuple
 
 # Local Imports
 from .settings import RECENT_TASKS_REPORT_USERNAMES
+from .settings import REVISION_ACCEPTANCE_THRESHOLD
 from .settings import REVISION_AGE_THRESHOLD_DAYS
 from .settings import REVISION_STATUS_REPORT_QUERY_KEY
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_COLUMN_NAMES
@@ -30,26 +33,39 @@ def get_report_types():
     return report_types
 
 
+class SlackMessage(namedtuple('SlackMessage', 'text,attachments')):
+    pass
+
+
 class PhablyticsReport:
     """This is the base class for other Phablytics reports.
     """
-    def __init__(self, *args, **kwargs):
-        pass
+    def __init__(self, as_slack=False, *args, **kwargs):
+        self.as_slack = as_slack
 
     def generate_report(self, *args, **kwargs):
-        pass
+        self._prepare_report()
+
+        if self.as_slack:
+            report =self.generate_slack_report()
+        else:
+            report =self.generate_text_report()
+
+        return report
 
 
 class RevisionStatusReport(PhablyticsReport):
     """The Revision Status Report shows a list of Diffs being worked on by a team,
     and outputs them based on their acceptance/needs review status
     """
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.repo_phids = []
         self.user_phids = []
 
         self.repos_lookup = None
         self.users_lookup = None
+
+        super(RevisionStatusReport, self).__init__(*args, **kwargs)
 
     def _add_users(self, phids):
         self.user_phids.extend(phids)
@@ -63,15 +79,20 @@ class RevisionStatusReport(PhablyticsReport):
         self.users_lookup = get_users_by_phid(self.user_phids)
         self.repos_lookup = get_repos_by_phid(self.repo_phids)
 
-    def generate_report(self):
+    def _prepare_report(self):
+        """Prepares the Revision Status Report
+        """
         date_created = (datetime.datetime.now() - datetime.timedelta(days=REVISION_AGE_THRESHOLD_DAYS)).replace(hour=0, minute=0, second=0)
         active_revisions = fetch_differential_revisions(
             REVISION_STATUS_REPORT_QUERY_KEY,
             modified_after_dt=date_created
         )
 
+        # place revisions into buckets
         revisions_accepted = []
-        revisions_todo = []
+        revisions_blocked = []
+        revisions_additional_approval = []
+        revisions_to_review = []
 
         for revision in active_revisions:
             if revision.meets_acceptance_criteria:
@@ -79,74 +100,164 @@ class RevisionStatusReport(PhablyticsReport):
             elif revision.is_wip:
                 # skip WIP
                 pass
+            elif revision.num_blockers > 0:
+                revisions_blocked.append(revision)
+            elif 0 < revision.num_acceptors < REVISION_ACCEPTANCE_THRESHOLD:
+                revisions_additional_approval.append(revision)
             else:
-                revisions_todo.append(revision)
+                # no approvers
+                revisions_to_review.append(revision)
 
             self._add_users(revision.reviewer_phids)
             self._add_users([revision.author_phid])
 
             self._add_repo(revision.repo_phid)
 
+        self.revisions_accepted = revisions_accepted
+        self.revisions_blocked = revisions_blocked
+        self.revisions_additional_approval = revisions_additional_approval
+        self.revisions_to_review = revisions_to_review
+
         # generate lookup tables
         self._lookup_phids()
 
-        report = []
-        count = 0
+    def _format_and_append_revision_to_report(self, report, revision, count):
+        repo = self.repos_lookup[revision.repo_phid]
 
-        def _format_and_append_revision_to_report(revision, count):
-            repo = self.repos_lookup[revision.repo_phid]
+        author = self.users_lookup[revision.author_phid]
+        acceptors = [f'`{self.users_lookup[phid].name}`' for phid in revision.acceptor_phids]
+        blockers = [f'`{self.users_lookup[phid].name}`' for phid in revision.blocker_phids]
 
-            author = self.users_lookup[revision.author_phid]
-            acceptors = [f'`{self.users_lookup[phid].name}`' for phid in revision.acceptor_phids]
-            blockers = [f'`{self.users_lookup[phid].name}`' for phid in revision.blocker_phids]
-
-            report.append(
-                f'{count}. _{revision.title}_ (<{revision.url}|{revision.revision_id}>) by `{author.name}` on `{repo.readable_name}`'
-            )
-            reviewers_msg = []
-            if len(acceptors) > 0:
-                reviewers_msg.append(f":white_check_mark: accepted by {', '.join(acceptors)}")
-            if len(blockers) > 0:
-                if len(reviewers_msg) > 0:
-                    reviewers_msg.append('; ')
-                else:
-                    pass
-                reviewers_msg.append(f":no_entry_sign: blocked by {', '.join(blockers)}")
-
+        report.append(
+            f'{count}. _{revision.title}_ (<{revision.url}|{revision.revision_id}>) by `{author.name}` on `{repo.readable_name}`'
+        )
+        reviewers_msg = []
+        if len(acceptors) > 0:
+            reviewers_msg.append(f":white_check_mark: accepted by {', '.join(acceptors)}")
+        if len(blockers) > 0:
             if len(reviewers_msg) > 0:
-                report.append(f"    {''.join(reviewers_msg)}")
+                reviewers_msg.append('; ')
+            else:
+                pass
+            reviewers_msg.append(f":no_entry_sign: blocked by {', '.join(blockers)}")
 
-            report.append('')
+        if len(reviewers_msg) > 0:
+            report.append(f"    {''.join(reviewers_msg)}")
 
-        if len(revisions_accepted) > 0:
+        report.append('')
+
+    def generate_text_report(self):
+        report = []
+
+        if len(self.revisions_accepted) > 0:
             count = 0
-            report.append(':white_check_mark: *Accepted and Ready to Land*: _(oldest first)_')
-            for revision in sorted(revisions_accepted, key=lambda r: r.modified_ts):
+            report.append(f':white_check_mark: *{len(self.revisions_accepted)} Diffs are Accepted and Ready to Land*: _(oldest first)_')
+            for revision in sorted(self.revisions_accepted, key=lambda r: r.modified_ts):
                 count += 1
-                _format_and_append_revision_to_report(revision, count)
+                self._format_and_append_revision_to_report(report, revision, count)
             report.append('')
 
-        if len(revisions_todo) > 0:
-            count =0
-            if len(revisions_accepted) > 0:
+        if len(self.revisions_todo) > 0:
+            count = 0
+            if len(self.revisions_accepted) > 0:
                 report.append('')
             else:
                 pass
 
-            report.append(':warning: *Needs Review*: _(newest first)_')
-            for revision in sorted(revisions_todo, key=lambda r: r.modified_ts, reverse=True):
+            report.append(f':warning: *{len(self.revisions_todo)} Diffs Need Review*: _(newest first)_')
+            for revision in sorted(self.revisions_todo, key=lambda r: r.modified_ts, reverse=True):
                 count += 1
-                _format_and_append_revision_to_report(revision, count)
+                self._format_and_append_revision_to_report(report, revision, count)
             report.append('')
 
         report_string = '\n'.join(report).encode('utf-8').decode('utf-8')
         return report_string
 
+    def generate_slack_report(self):
+        attachments = []
+
+        if len(self.revisions_to_review) > 0:
+            report = []
+            count = 0
+
+            for revision in sorted(self.revisions_to_review, key=lambda r: r.modified_ts):
+                count += 1
+                self._format_and_append_revision_to_report(report, revision, count)
+
+            attachments.append({
+                'pretext': f':warning: *{len(self.revisions_to_review)} Diffs need to be reviewed*: _(newest first)_',
+                'text': '\n'.join(report).encode('utf-8').decode('utf-8',),
+                'color': 'warning',
+            })
+
+        if len(self.revisions_blocked) > 0:
+            report = []
+            count = 0
+
+            for revision in sorted(self.revisions_blocked, key=lambda r: r.modified_ts):
+                count += 1
+                self._format_and_append_revision_to_report(report, revision, count)
+
+            attachments.append({
+                'pretext': f':no_entry_sign: *{len(self.revisions_blocked)} Diffs are blocked*: _(newest first)_',
+                'text': '\n'.join(report).encode('utf-8').decode('utf-8',),
+                'color': 'danger',
+            })
+
+        if len(self.revisions_additional_approval) > 0:
+            report = []
+            count = 0
+
+            for revision in sorted(self.revisions_additional_approval, key=lambda r: r.modified_ts, reverse=True):
+                count += 1
+                self._format_and_append_revision_to_report(report, revision, count)
+
+            attachments.append({
+                'pretext': f':pray: *{len(self.revisions_additional_approval)} Diffs need additional approvals*: _(newest first)_',
+                'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
+                'color': '#439fe0',
+            })
+
+        if len(self.revisions_accepted) > 0:
+            report = []
+            count = 0
+
+            for revision in sorted(self.revisions_accepted, key=lambda r: r.modified_ts):
+                count += 1
+                self._format_and_append_revision_to_report(report, revision, count)
+
+            attachments.append({
+                'pretext': f':white_check_mark: *{len(self.revisions_accepted)} Diffs are accepted and ready to land*: _(oldest first)_',
+                'text': '\n'.join(report).encode('utf-8').decode('utf-8',),
+                'color': 'good',
+            })
+
+        DIFF_PRESENT_MESSAGES = [
+            "Let's review some diffs!",
+            "It's code review time!",
+        ]
+
+        DIFF_ABSENT_MESSAGES = [
+            "It's code review time... but what a shame, there are no diffs to review :disappointed:. Let us write more code!",
+            'No code reviews today. Enjoy the extra time! :sunglasses:',
+        ]
+
+        context = {
+            'here' : '<!here> ' if len(attachments) > 0 else '',
+            'greeting' : 'Greetings!',
+            'message' : random.choice(DIFF_PRESENT_MESSAGES) if len(attachments) > 0 else random.choice(DIFF_ABSENT_MESSAGES),
+        }
+
+        slack_text = 'Greetings Team!\n\n%(message)s' % context
+
+        report = SlackMessage(slack_text, attachments)
+        return report
+
 
 class UpcomingProjectTasksDueReport(PhablyticsReport):
     """The Upcoming Project Tasks Due Report shows a list of tasks ordered by creation date or custom key.
     """
-    def __init__(self, columns=None, order=None):
+    def __init__(self, columns=None, order=None, *args, **kwargs):
         if order is None:
             order = UPCOMING_PROJECT_TASKS_DUE_REPORT_ORDER
 
@@ -156,6 +267,8 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
         #self.project = project
         #self.columns = columns
         self.order = order
+
+        super(UpcomingProjectTasksDueReport, self).__init__(*args, **kwargs)
 
     def generate_report(self):
         if self.columns:
@@ -204,7 +317,7 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
 
 class RecentTasksReport(PhablyticsReport):
     def __init__(self, *args, **kwargs):
-        pass
+        super(RecentTasksReport, self).__init__(*args, **kwargs)
 
     def generate_report(self):
         usernames = RECENT_TASKS_REPORT_USERNAMES

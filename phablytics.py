@@ -26,10 +26,10 @@ class PhablyticsCLI:
         elif self.report_type:
             report_class = self.report_types.get(self.report_type)
             if report_class:
-                report = report_class().generate_report()
+                report = report_class(as_slack=self.slack).generate_report()
                 if self.slack:
                     slack_channel = self.slack_channel
-                    slack_message(text=report, channel=slack_channel)
+                    slack_message(text=report.text, attachments=report.attachments, channel=slack_channel)
                 else:
                     print(report)
 

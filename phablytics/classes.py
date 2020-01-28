@@ -223,6 +223,10 @@ class Revision(PhabricatorEntity):
         return phids
 
     @property
+    def num_acceptors(self):
+        return len(self.acceptor_phids)
+
+    @property
     def blocker_phids(self):
         """Get PHIDs of blocking reviewer entities
         """
@@ -243,6 +247,10 @@ class Revision(PhabricatorEntity):
             if _is_blocking(reviewer)
         ]
         return phids
+
+    @property
+    def num_blockers(self):
+        return len(self.blocker_phids)
 
     ##
     # Computed attributes
