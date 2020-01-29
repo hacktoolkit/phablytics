@@ -57,6 +57,31 @@ class PhablyticsReport:
         return report
 
 
+def pluralize_noun(noun, count):
+    """Adds 's' to `noun` depending on `count`
+    """
+    suffix = '' if count == 1 else 's'  # 'pluralize 0 or many
+    pluralized = noun + suffix
+    return pluralized
+
+
+def pluralize_verb(verb, n_subjects):
+    """Adds 's' to `verb` for singular `n_subjects`
+    """
+    if verb in ('is', 'are',):
+        pluralized = pluralize_tobe_verb(n_subjects)
+    else:
+        suffix = 's' if n_subjects == 1 else ''
+        pluralized = verb + suffix
+
+    return pluralized
+
+
+def pluralize_tobe_verb(n_subjects):
+    pluralized = 'is' if n_subjects == 1 else 'are'
+    return pluralized
+
+
 class RevisionStatusReport(PhablyticsReport):
     """The Revision Status Report shows a list of Diffs being worked on by a team,
     and outputs them based on their acceptance/needs review status
@@ -180,7 +205,9 @@ class RevisionStatusReport(PhablyticsReport):
         """
         attachments = []
 
-        if len(self.revisions_to_review) > 0:
+        # Revisions with 0 reviews
+        num_revisions = len(self.revisions_to_review)
+        if num_revisions > 0:
             report = []
             count = 0
 
@@ -189,12 +216,14 @@ class RevisionStatusReport(PhablyticsReport):
                 self._format_and_append_revision_to_report(report, revision, count)
 
             attachments.append({
-                'pretext': f':warning: *{len(self.revisions_to_review)} Diffs need to be reviewed*: _(newest first)_',
+                'pretext': f":warning: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} to be reviewed*: _(newest first)_",
                 'text': '\n'.join(report).encode('utf-8').decode('utf-8',),
                 'color': 'warning',
             })
 
-        if len(self.revisions_blocked) > 0:
+        # Revisions with blockers
+        num_revisions = len(self.revisions_blocked)
+        if num_revisions > 0:
             report = []
             count = 0
 
@@ -203,12 +232,14 @@ class RevisionStatusReport(PhablyticsReport):
                 self._format_and_append_revision_to_report(report, revision, count)
 
             attachments.append({
-                'pretext': f':no_entry_sign: *{len(self.revisions_blocked)} Diffs are blocked*: _(newest first)_',
+                'pretext': f":no_entry_sign: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('is', num_revisions)} blocked*: _(newest first)_",
                 'text': '\n'.join(report).encode('utf-8').decode('utf-8',),
                 'color': 'danger',
             })
 
-        if len(self.revisions_additional_approval) > 0:
+        # Revisions with 1 approval
+        num_revisions = len(self.revisions_additional_approval)
+        if num_revisions > 0:
             report = []
             count = 0
 
@@ -217,12 +248,14 @@ class RevisionStatusReport(PhablyticsReport):
                 self._format_and_append_revision_to_report(report, revision, count)
 
             attachments.append({
-                'pretext': f':pray: *{len(self.revisions_additional_approval)} Diffs need additional approvals*: _(newest first)_',
+                'pretext': f":pray: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} additional approvals*: _(newest first)_",
                 'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
                 'color': '#439fe0',
             })
 
-        if len(self.revisions_accepted) > 0:
+        # Revisions Accepted
+        num_revisions = len(self.revisions_accepted)
+        if num_revisions > 0:
             report = []
             count = 0
 
@@ -231,7 +264,7 @@ class RevisionStatusReport(PhablyticsReport):
                 self._format_and_append_revision_to_report(report, revision, count)
 
             attachments.append({
-                'pretext': f':white_check_mark: *{len(self.revisions_accepted)} Diffs are accepted and ready to land*: _(oldest first)_',
+                'pretext': f":white_check_mark: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('is', num_revisions)} accepted and ready to land*: _(oldest first)_",
                 'text': '\n'.join(report).encode('utf-8').decode('utf-8',),
                 'color': 'good',
             })
