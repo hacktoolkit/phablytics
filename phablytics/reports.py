@@ -139,13 +139,13 @@ class RevisionStatusReport(PhablyticsReport):
         )
         reviewers_msg = []
         if len(acceptors) > 0:
-            reviewers_msg.append(f":heavy_check_mark: accepted by {', '.join(acceptors)}")
+            reviewers_msg.append(f":heavy_check_mark: {', '.join(acceptors)}")
         if len(blockers) > 0:
             if len(reviewers_msg) > 0:
                 reviewers_msg.append('; ')
             else:
                 pass
-            reviewers_msg.append(f":no_entry_sign: blocked by {', '.join(blockers)}")
+            reviewers_msg.append(f":no_entry_sign: {', '.join(blockers)}")
 
         if len(reviewers_msg) > 0:
             report.append(f"    {''.join(reviewers_msg)}")
