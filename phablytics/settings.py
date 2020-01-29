@@ -7,6 +7,12 @@ import os
 
 PHABRICATOR_INSTANCE_BASE_URL = 'configure_me'
 
+GROUPS = {
+    'example-group-the-incredibles' : {
+        'id': 9000,
+    },
+}
+
 # Reports
 REVISION_AGE_THRESHOLD_DAYS = 14
 REVISION_ACCEPTANCE_THRESHOLD = 2

@@ -2,6 +2,7 @@
 import datetime
 
 # Local Imports
+from .settings import GROUPS
 from .settings import PHABRICATOR_INSTANCE_BASE_URL
 from .settings import REVISION_ACCEPTANCE_THRESHOLD
 
@@ -151,9 +152,19 @@ class Repo(PhabricatorEntity):
     # Computed attributes
 
     @property
-    def readable_name(self):
+    def symbolic_name(self):
+        name = self.full_name.split(' ')[0]
+        return name
+
+    @property
+    def slug(self):
         name = self.full_name.split(' ')[1]
         return name
+
+    @property
+    def repository_url(self):
+        url = f'{PHABRICATOR_INSTANCE_BASE_URL}/source/{self.slug}'
+        return url
 
 
 class Revision(PhabricatorEntity):
@@ -268,6 +279,15 @@ class Revision(PhabricatorEntity):
 
 
 class User(PhabricatorEntity):
+    def as_group(self):
+        """Sometimes, Users are actually Groups, so convert to a Group
+        when this is detected
+        """
+        assert self.is_group
+        group_data = GROUPS[self.username]
+        group = Group(self.raw_data, group_data)
+        return group
+
     ##
     # Primary attributes
 
@@ -278,5 +298,49 @@ class User(PhabricatorEntity):
 
     @property
     def username(self):
-        username = self.fields['username']
+        username = self.fields.get('username', self.name)
         return username
+
+    @property
+    def is_group(self):
+        """Checks to see if this User is actually a Group
+        """
+        is_group = self.username in GROUPS
+        return is_group
+
+    @property
+    def profile_url(self):
+        if self.is_group:
+            # this is a group, show the group profile page instead
+            url = self.as_group().profile_url
+        else:
+            # this is a regular user
+            url = f'{PHABRICATOR_INSTANCE_BASE_URL}/p/{self.username}'
+        return url
+
+    @property
+    def fields(self):
+        """Overwrites PhabricatorEntity.fields
+
+        NOTE: Users might get instantiated with partial data, without ['fields']
+        """
+
+        fields = self.raw_data.get('fields', {})
+        return fields
+
+
+class Group(PhabricatorEntity):
+    def __init__(self, raw_data, group_data=None, *args, **kwargs):
+        super(Group, self).__init__(raw_data, *args, **kwargs)
+
+        self.group_data = group_data
+
+    @property
+    def group_id(self):
+        group_id = self.group_data['id']
+        return group_id
+
+    @property
+    def profile_url(self):
+        url = f'{PHABRICATOR_INSTANCE_BASE_URL}/project/members/{self.group_id}'
+        return url

@@ -124,18 +124,23 @@ class RevisionStatusReport(PhablyticsReport):
         # generate lookup tables
         self._lookup_phids()
 
+    def _format_user_phid(self, phid):
+        user = self.users_lookup[phid]
+        formatted = f'*<{user.profile_url}|{user.name}>*'
+        return formatted
+
     def _format_and_append_revision_to_report(self, report, revision, count):
         repo = self.repos_lookup[revision.repo_phid]
+        repo_link = f'<{repo.repository_url}|{repo.slug}>'
 
-        author = self.users_lookup[revision.author_phid]
-        acceptors = [f'`{self.users_lookup[phid].name}`' for phid in revision.acceptor_phids]
-        blockers = [f'`{self.users_lookup[phid].name}`' for phid in revision.blocker_phids]
+        acceptors = [f'{self._format_user_phid(phid)}' for phid in revision.acceptor_phids]
+        blockers = [f'{self._format_user_phid(phid)}' for phid in revision.blocker_phids]
 
         MAX_LENGTH = 50
         revision_title = revision.title if len(revision.title) < MAX_LENGTH else (revision.title[:MAX_LENGTH - 3] + '...')
 
         report.append(
-            f'{count}. <{revision.url}|{revision.revision_id}> - `{repo.readable_name}` - _{revision_title}_ by `{author.name}`'
+            f'{count}. <{revision.url}|{revision.revision_id}> - `{repo_link}` - _{revision_title}_ by {self._format_user_phid(revision.author_phid)}'
         )
         reviewers_msg = []
         if len(acceptors) > 0:
