@@ -179,7 +179,7 @@ class RevisionStatusReport(PhablyticsReport):
             report = []
             count = 0
 
-            for revision in sorted(self.revisions_to_review, key=lambda r: r.modified_ts):
+            for revision in sorted(self.revisions_to_review, key=lambda r: r.modified_ts, reverse=True):
                 count += 1
                 self._format_and_append_revision_to_report(report, revision, count)
 
@@ -193,7 +193,7 @@ class RevisionStatusReport(PhablyticsReport):
             report = []
             count = 0
 
-            for revision in sorted(self.revisions_blocked, key=lambda r: r.modified_ts):
+            for revision in sorted(self.revisions_blocked, key=lambda r: r.modified_ts, reverse=True):
                 count += 1
                 self._format_and_append_revision_to_report(report, revision, count)
 
