@@ -13,6 +13,7 @@ from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_CUSTOM_EXCLUSIONS
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_EXCLUDED_TASKS
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_ORDER
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_PROJECT_NAME
+from .settings import UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_DAYS
 from .utils import fetch_differential_revisions
 from .utils import get_maniphest_tasks_by_owners
 from .utils import get_maniphest_tasks_by_project_name
@@ -44,9 +45,17 @@ class PhablyticsReport:
         self.as_slack = as_slack
 
     def _prepare_report(self):
+        """Any prep logic for generating a report
+
+        Subclasses SHOULD override this method
+        """
         pass
 
     def generate_report(self, *args, **kwargs):
+        """The main function to generate a report
+
+        Subclasses MAY override this method
+        """
         self._prepare_report()
 
         if self.as_slack:
@@ -55,6 +64,32 @@ class PhablyticsReport:
             report =self.generate_text_report()
 
         return report
+
+    def generate_text_report(self):
+        """Generates a text report
+
+        Subclasses MAY override this method
+
+        It turns out, however, that generating a text report
+        from the Slack version is not a bad default
+        """
+        slack_report = self.generate_slack_report()
+
+        report = []
+        report.append(slack_report.text)
+        report.append('')
+
+        count = 0
+        for attachment in slack_report.attachments:
+            if count > 0:
+                report.append('')
+            report.append(attachment['pretext'])
+            report.append(attachment['text'])
+            count += 1
+
+        report_string = '\n'.join(report).encode('utf-8').decode('utf-8',)
+
+        return report_string
 
 
 def pluralize_noun(noun, count):
@@ -182,24 +217,6 @@ class RevisionStatusReport(PhablyticsReport):
 
         report.append('')
 
-    def generate_text_report(self):
-        slack_report = self.generate_slack_report()
-
-        report = []
-        report.append(slack_report.text)
-        report.append('')
-
-        count = 0
-        for attachment in slack_report.attachments:
-            if count > 0:
-                report.append('')
-            report.append(attachment['pretext'])
-            report.append(attachment['text'])
-
-        report_string = '\n'.join(report).encode('utf-8').decode('utf-8',)
-
-        return report_string
-
     def generate_slack_report(self):
         """Generates the Revision Status Report with Slack attachments
         """
@@ -307,22 +324,21 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
 
         super(UpcomingProjectTasksDueReport, self).__init__(*args, **kwargs)
 
-    def generate_text_report(self):
+    class _ReportSection(namedtuple('ReportSection', 'column_phid,column,tasks')):
+        pass
+
+    def _prepare_report(self):
         if self.columns:
             columns = get_project_columns_by_project_name(self.project_name, self.columns)
-            column_phids = [
-                column.phid
+            column_lookup = {
+                column.phid: column
                 for column
                 in columns
-            ]
+            }
         else:
-            column_phids = []
+            column_lookup = {}
 
-        maniphest_tasks = get_maniphest_tasks_by_project_name(
-            self.project_name,
-            column_phids=column_phids,
-            order=self.order,
-        )
+        self.column_lookup = column_lookup
 
         def _should_include(task):
             #import json
@@ -337,23 +353,51 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
             )
             return should_include
 
-        tasks = filter(_should_include, maniphest_tasks)
+        report_sections = []
+        for column_phid, column in self.column_lookup.items():
+            maniphest_tasks = get_maniphest_tasks_by_project_name(
+                self.project_name,
+                column_phids=[column_phid],
+                order=self.order,
+            )
 
-        report = []
-        count = 0
+            tasks = filter(_should_include, maniphest_tasks)
 
-        report.append(f"*{self.project_name} - {', '.join(self.columns)} - Tasks Due Soon*")
+            report_sections.append(self._ReportSection(
+                column_phid,
+                column,
+                tasks
+            ))
 
-        for task in tasks:
-            count += 1
-            report.append(f'{count}. _{task.name}_ (<{task.url}|{task.task_id}>)')
-
-        report_string = '\n'.join(report).encode('utf-8').decode('utf-8')
-        return report_string
+        self.report_sections = report_sections
 
     def generate_slack_report(self):
-        text_report = self.generate_text_report()
-        report = SlackMessage(text_report, None)
+        colors = [
+            '#333333',
+            '#666666',
+        ]
+
+        attachments = []
+
+        for report_section in self.report_sections:
+            report = []
+            count = 0
+
+            for task in report_section.tasks:
+                count += 1
+                task_link = f'<{task.url}|{task.task_id}>'
+                report.append(f'{count}. {task_link}  - _{task.name}_')
+
+            attachments.append({
+                'pretext': f"*{count} {report_section.column.name} {pluralize_noun('Task', count)}*:",
+                'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
+                'color': colors[len(attachments) % len(colors)],
+            })
+
+        slack_text = f'*{self.project_name} - Upcoming Tasks Due Soon* _(within the next {UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_DAYS} days)_'
+
+        report = SlackMessage(slack_text, attachments)
+
         return report
 
 
