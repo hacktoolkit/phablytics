@@ -13,8 +13,10 @@ from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_CUSTOM_EXCLUSIONS
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_EXCLUDED_TASKS
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_ORDER
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_PROJECT_NAME
-from .settings import UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_DAYS
+from .settings import UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_LOWER_HOURS
+from .settings import UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_UPPER_HOURS
 from .settings import URGENT_AND_OVERDUE_TASKS_REPORT_CUSTOM_EXCLUSIONS
+from .settings import URGENT_AND_OVERDUE_TASKS_THRESHOLD_HOURS
 from .utils import fetch_differential_revisions
 from .utils import get_maniphest_tasks_by_owners
 from .utils import get_maniphest_tasks_by_project_name
@@ -315,6 +317,7 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
     """
     HEADING = 'Upcoming Tasks Due Soon'
     EXCLUSIONS = UPCOMING_PROJECT_TASKS_DUE_REPORT_CUSTOM_EXCLUSIONS
+    TIMELINE = f'within the next {UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_LOWER_HOURS} - {UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_UPPER_HOURS} hours'
 
     def __init__(self, columns=None, order=None, *args, **kwargs):
         if order is None:
@@ -393,13 +396,17 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
                 task_link = f'<{task.url}|{task.task_id}>'
                 report.append(f'{count}. {task_link}  - _{task.name}_')
 
-            attachments.append({
-                'pretext': f"*{count} {report_section.column.name} {pluralize_noun('Task', count)}*:",
-                'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
-                'color': colors[len(attachments) % len(colors)],
-            })
+            if count > 0:
+                attachments.append({
+                    'pretext': f"*{count} {report_section.column.name} {pluralize_noun('Task', count)}*:",
+                    'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
+                    'color': colors[len(attachments) % len(colors)],
+                })
+            else:
+                # omit section if no tasks for that section
+                pass
 
-        slack_text = f'*{self.project_name} - {self.HEADING}* _(within the next {UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_DAYS} days)_'
+        slack_text = f'*{self.project_name} - {self.HEADING}* _({self.TIMELINE})_'
 
         report = SlackMessage(slack_text, attachments)
 
@@ -411,8 +418,9 @@ class UrgentAndOverdueProjectTasksReport(UpcomingProjectTasksDueReport):
 
     Tasks that are either due within 24 hours, or in the past (overdue)
     """
-    HEADING = 'Urgent Tasks Due in 24 Hours or Already Overdue'
+    HEADING = 'Urgent or Overdue Tasks'
     EXCLUSIONS = URGENT_AND_OVERDUE_TASKS_REPORT_CUSTOM_EXCLUSIONS
+    TIMELINE = f'past due - within {URGENT_AND_OVERDUE_TASKS_THRESHOLD_HOURS} hours'
 
 
 class RecentTasksReport(PhablyticsReport):
