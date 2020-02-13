@@ -14,6 +14,7 @@ from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_EXCLUDED_TASKS
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_ORDER
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_PROJECT_NAME
 from .settings import UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_DAYS
+from .settings import URGENT_AND_OVERDUE_TASKS_REPORT_CUSTOM_EXCLUSIONS
 from .utils import fetch_differential_revisions
 from .utils import get_maniphest_tasks_by_owners
 from .utils import get_maniphest_tasks_by_project_name
@@ -29,6 +30,7 @@ def get_report_types():
     report_types = {
         'RevisionStatus' : RevisionStatusReport,
         'UpcomingProjectTasksDue' : UpcomingProjectTasksDueReport,
+        'UrgentAndOverdueProjectTasks' : UrgentAndOverdueProjectTasksReport,
         'RecentTasks' : RecentTasksReport,
     }
     return report_types
@@ -311,6 +313,9 @@ class RevisionStatusReport(PhablyticsReport):
 class UpcomingProjectTasksDueReport(PhablyticsReport):
     """The Upcoming Project Tasks Due Report shows a list of tasks ordered by creation date or custom key.
     """
+    HEADING = 'Upcoming Tasks Due Soon'
+    EXCLUSIONS = UPCOMING_PROJECT_TASKS_DUE_REPORT_CUSTOM_EXCLUSIONS
+
     def __init__(self, columns=None, order=None, *args, **kwargs):
         if order is None:
             order = UPCOMING_PROJECT_TASKS_DUE_REPORT_ORDER
@@ -348,7 +353,7 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
                 and not any([
                     custom_exclusion(task)
                     for custom_exclusion
-                    in UPCOMING_PROJECT_TASKS_DUE_REPORT_CUSTOM_EXCLUSIONS
+                    in self.EXCLUSIONS
                 ])
             )
             return should_include
@@ -394,11 +399,20 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
                 'color': colors[len(attachments) % len(colors)],
             })
 
-        slack_text = f'*{self.project_name} - Upcoming Tasks Due Soon* _(within the next {UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_DAYS} days)_'
+        slack_text = f'*{self.project_name} - {self.HEADING}* _(within the next {UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_DAYS} days)_'
 
         report = SlackMessage(slack_text, attachments)
 
         return report
+
+
+class UrgentAndOverdueProjectTasksReport(UpcomingProjectTasksDueReport):
+    """A special case of `UpcomingProjectTasksDueReport`
+
+    Tasks that are either due within 24 hours, or in the past (overdue)
+    """
+    HEADING = 'Urgent Tasks Due in 24 Hours or Already Overdue'
+    EXCLUSIONS = URGENT_AND_OVERDUE_TASKS_REPORT_CUSTOM_EXCLUSIONS
 
 
 class RecentTasksReport(PhablyticsReport):
