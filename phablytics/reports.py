@@ -8,6 +8,7 @@ from .settings import RECENT_TASKS_REPORT_USERNAMES
 from .settings import REVISION_ACCEPTANCE_THRESHOLD
 from .settings import REVISION_AGE_THRESHOLD_DAYS
 from .settings import REVISION_STATUS_REPORT_QUERY_KEY
+from .settings import TEAM_USERNAMES
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_COLUMN_NAMES
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_CUSTOM_EXCLUSIONS
 from .settings import UPCOMING_PROJECT_TASKS_DUE_REPORT_EXCLUDED_TASKS
@@ -149,6 +150,7 @@ class RevisionStatusReport(PhablyticsReport):
     def _prepare_report(self):
         """Prepares the Revision Status Report
         """
+        # get revisions
         date_created = (datetime.datetime.now() - datetime.timedelta(days=REVISION_AGE_THRESHOLD_DAYS)).replace(hour=0, minute=0, second=0)
         active_revisions = fetch_differential_revisions(
             REVISION_STATUS_REPORT_QUERY_KEY,
@@ -156,10 +158,10 @@ class RevisionStatusReport(PhablyticsReport):
         )
 
         # place revisions into buckets
-        revisions_accepted = []
-        revisions_blocked = []
-        revisions_additional_approval = []
         revisions_to_review = []
+        revisions_with_blocks = []
+        revisions_additional_approval = []
+        revisions_accepted = []
 
         for revision in active_revisions:
             if revision.meets_acceptance_criteria:
@@ -168,7 +170,7 @@ class RevisionStatusReport(PhablyticsReport):
                 # skip WIP
                 pass
             elif revision.num_blockers > 0:
-                revisions_blocked.append(revision)
+                revisions_with_blocks.append(revision)
             elif 0 < revision.num_acceptors < REVISION_ACCEPTANCE_THRESHOLD:
                 revisions_additional_approval.append(revision)
             else:
@@ -180,13 +182,35 @@ class RevisionStatusReport(PhablyticsReport):
 
             self._add_repo(revision.repo_phid)
 
-        self.revisions_accepted = revisions_accepted
+        # generate lookup tables after iterating through revisions
+        self._lookup_phids()
+
+        # split blockers into team blockers and external blockers
+        revisions_change_required = []
+        revisions_blocked = []
+
+        for revision in revisions_with_blocks:
+            team_blockers = list(
+                filter(
+                    lambda phid: self._get_phid_username(phid) in TEAM_USERNAMES,
+                    revision.blocker_phids
+                )
+            )
+            if len(team_blockers) > 0:
+                revisions_change_required.append(revision)
+            else:
+                revisions_blocked.append(revision)
+
+        # finally, assign bucketed revisions
+        self.revisions_to_review = revisions_to_review
+        self.revisions_change_required = revisions_change_required
         self.revisions_blocked = revisions_blocked
         self.revisions_additional_approval = revisions_additional_approval
-        self.revisions_to_review = revisions_to_review
+        self.revisions_accepted = revisions_accepted
 
-        # generate lookup tables
-        self._lookup_phids()
+    def _get_phid_username(self, phid):
+        user = self.users_lookup[phid]
+        return user.name
 
     def _format_user_phid(self, phid):
         user = self.users_lookup[phid]
@@ -239,10 +263,27 @@ class RevisionStatusReport(PhablyticsReport):
             attachments.append({
                 'pretext': f":warning: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} to be reviewed*: _(newest first)_",
                 'text': '\n'.join(report).encode('utf-8').decode('utf-8',),
-                'color': 'warning',
+                # 'color': 'warning',  # Slack-yellow, has an orange hue
+                'color': '#f2c744',
             })
 
-        # Revisions with blockers
+        # Revisions with team blockers - change required
+        num_revisions = len(self.revisions_change_required)
+        if num_revisions > 0:
+            report = []
+            count = 0
+
+            for revision in sorted(self.revisions_change_required, key=lambda r: r.modified_ts, reverse=True):
+                count += 1
+                self._format_and_append_revision_to_report(report, revision, count)
+
+            attachments.append({
+                'pretext': f":arrows_counterclockwise: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('require', num_revisions)} changes*: _(newest first)_",
+                'text': '\n'.join(report).encode('utf-8').decode('utf-8',),
+                'color': '#e8912d',  # orange
+            })
+
+        # Revisions with only external blockers
         num_revisions = len(self.revisions_blocked)
         if num_revisions > 0:
             report = []
@@ -271,7 +312,7 @@ class RevisionStatusReport(PhablyticsReport):
             attachments.append({
                 'pretext': f":pray: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} additional approvals*: _(newest first)_",
                 'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
-                'color': '#439fe0',
+                'color': '#439fe0',  # blue
             })
 
         # Revisions Accepted
