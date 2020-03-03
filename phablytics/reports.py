@@ -449,6 +449,12 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
 
         slack_text = f'*{self.project_name} - {self.HEADING}* _({self.TIMELINE})_'
 
+        if len(attachments) == 0:
+            slack_text = '{}\n{}'.format(
+                slack_text,
+                '_All caught up -- there are no tasks for this section._'
+            )
+
         report = SlackMessage(slack_text, attachments)
 
         return report
