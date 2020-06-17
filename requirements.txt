@@ -1,2 +1,2 @@
-htk==1.0.4
-phabricator==0.7.0
+htk>=1.0.4
+phabricator>=0.7.0

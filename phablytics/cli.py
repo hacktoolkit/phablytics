@@ -2,10 +2,13 @@
 import argparse
 import pprint
 
+# Third Party (PyPI) Imports
 from htk import slack_message
-from phablytics.reports import get_report_types
-from phablytics.utils import adhoc
-from phablytics.utils import whoami
+
+# Local Imports
+from .reports import get_report_types
+from .utils import adhoc
+from .utils import whoami
 
 
 class PhablyticsCLI:

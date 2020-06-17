@@ -1,5 +1,6 @@
 # Python Standard Library Imports
 import os
+import sys
 
 
 ##
@@ -37,9 +38,10 @@ RECENT_TASKS_REPORT_USERNAMES = []
 
 
 ##
-# Import Local Settings if `./local_settings.py` exists
+# Import Local Settings if `local_settings.py` exists in CWD
 
-LOCAL_SETTINGS_FILENAME = os.path.realpath(os.path.join(os.path.dirname(__file__), 'local_settings.py'))
+LOCAL_SETTINGS_FILENAME = os.path.realpath(os.path.join(os.getcwd(), 'settings.py'))
 
 if os.path.isfile(LOCAL_SETTINGS_FILENAME):
-    from .local_settings import *
+    sys.path.append(os.path.dirname(LOCAL_SETTINGS_FILENAME))
+    from settings import *

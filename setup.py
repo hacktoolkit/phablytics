@@ -24,8 +24,13 @@ here = path.abspath(path.dirname(__file__))
 
 long_description = 'Analytics, metrics, and reports for Phabricator (https://phacility.com/phabricator/).'
 
+
+with open(path.join(here, 'requirements.txt'), 'r') as f:
+    REQUIREMENTS = f.readlines()
+
 with open(path.join(here, 'VERSION')) as f:
     VERSION = f.read().strip()
+
 
 setup(
     name='phablytics',
@@ -87,7 +92,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=[],
+    install_requires=REQUIREMENTS,
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
@@ -116,7 +121,7 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         'console_scripts': [
-            'phablytics=phablytics:main',
+            'phablytics=phablytics.cli:main',
         ],
     },
 )
