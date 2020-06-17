@@ -109,7 +109,7 @@ def fetch_differential_revisions(query_key, modified_after_dt=None, modified_bef
 
 def get_maniphest_tasks_by_owners(owner_phids):
     constraints = {
-        'assigned' : owner_phids,
+        'assigned': owner_phids,
     }
     results = PHAB.maniphest.search(
         constraints=constraints

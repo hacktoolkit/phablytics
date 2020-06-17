@@ -293,7 +293,10 @@ class User(PhabricatorEntity):
 
     @property
     def name(self):
-        name = self.raw_data['name']
+        name = self.raw_data.get('name')
+        if name is None and 'fields' in self.raw_data:
+            name = self.raw_data['fields'].get('realName') or self.raw_data['fields'].get('username')
+
         return name
 
     @property
