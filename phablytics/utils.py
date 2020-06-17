@@ -165,18 +165,23 @@ def get_project_by_name(project_name):
 
     https://secure.phabricator.com/conduit/method/project.search/
     """
-
+    project_name = project_name.strip()
     constraints = {
-        'query': project_name.strip(),
+        'query': project_name,
     }
     results = PHAB.project.search(constraints=constraints)
-    projects = [Project(project_data) for project_data in results.data]
 
-    project = None
-    if len(projects) > 1:
-        raise Exception(f'Multiple projects found for name: {project_name}')
-    else:
+    projects = [
+        Project(project_data)
+        for project_data
+        in results.data
+        if project_data.get('fields', {}).get('name', '') == project_name  # look for exact match
+    ]
+
+    if len(projects) > 0:
         project = projects[0]
+    else:
+        raise Exception('No project named `{}` found.'.format(project_name))
 
     return project
 
