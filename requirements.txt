@@ -1,3 +1,2 @@
-htk==1.0.1
-isort==4.3.21
+htk==1.0.4
 phabricator==0.7.0
