@@ -1,3 +1,6 @@
+[![](https://img.shields.io/pypi/pyversions/phablytics.svg?longCache=True)](https://pypi.org/project/phablytics/)
+[![](https://img.shields.io/pypi/v/phablytics.svg?maxAge=3600)](https://pypi.org/project/phablytics/)
+
 # phablytics
 Analytics, metrics, and reports for Phabricator (https://phacility.com/phabricator/).
 
