@@ -5,16 +5,19 @@ from __future__ import absolute_import
 import datetime
 import json
 
+# Third Party (PyPI) Imports
 from phabricator import Phabricator
 
 # Local Imports
-from .classes import Maniphest
-from .classes import PhabricatorEntity
-from .classes import Project
-from .classes import ProjectColumn
-from .classes import Repo
-from .classes import Revision
-from .classes import User
+from .classes import (
+    Maniphest,
+    PhabricatorEntity,
+    Project,
+    ProjectColumn,
+    Repo,
+    Revision,
+    User,
+)
 
 
 ##
