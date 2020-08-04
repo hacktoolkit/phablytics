@@ -114,3 +114,26 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
         )
 
         return report
+
+    def generate_text_report(self):
+        lines = []
+        lines.append(f'**{self.project_name} - {self.HEADING}** *({self.timeline})*')
+        lines.append('')
+
+        for report_section in self.report_sections:
+            report = []
+            count = 0
+
+            for task in report_section.tasks:
+                count += 1
+                task_link = f'[{task.task_id}]({task.url})'
+                report.append(f'{count}. {task_link}  - *{task.name}*')
+
+            if count > 0:
+                lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))
+            else:
+               # omit section if no tasks for that section
+                pass
+
+        text_report = '\n'.join(lines)
+        return text_report

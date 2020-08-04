@@ -66,3 +66,8 @@ class RecentTasksReport(PhablyticsReport):
             emoji=self.slack_emoji
         )
         return report
+
+    def generate_html_report(self):
+        text_report = self.generate_text_report()
+        html_report = f'<pre>{text_report}</pre>'
+        return html_report

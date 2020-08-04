@@ -2,8 +2,12 @@
 import datetime
 import random
 
+# Third Party (PyPI) Imports
+import emoji
+
 # Phablytics Imports
 from phablytics.reports.base import PhablyticsReport
+from phablytics.reports.constants import HTML_ICON_SEPARATOR
 from phablytics.reports.utils import (
     SlackMessage,
     pluralize_noun,
@@ -107,36 +111,61 @@ class RevisionStatusReport(PhablyticsReport):
         user = self.users_lookup[phid]
         return user.name
 
-    def _format_user_phid(self, phid):
+    def _format_user_phid(self, phid, slack=True):
         user = self.users_lookup[phid]
-        formatted = f'*<{user.profile_url}|{user.name}>*'
+        if slack:
+            formatted = f'*<{user.profile_url}|{user.name}>*'
+        else:
+            formatted = f'**[{user.name}]({user.profile_url})**'
         return formatted
 
-    def _format_and_append_revision_to_report(self, report, revision, count):
+    def _format_and_append_revision_to_report(self, report, revision, count, slack=True):
         repo = self.repos_lookup[revision.repo_phid]
-        repo_link = f'<{repo.repository_url}|{repo.slug}>'
+        if slack:
+            repo_link = f'<{repo.repository_url}|{repo.slug}>'
+        else:
+            repo_link = f'[{repo.slug}]({repo.repository_url})'
 
-        acceptors = [f'{self._format_user_phid(phid)}' for phid in revision.acceptor_phids]
-        blockers = [f'{self._format_user_phid(phid)}' for phid in revision.blocker_phids]
+        acceptors = [f'{self._format_user_phid(phid, slack=slack)}' for phid in revision.acceptor_phids]
+        blockers = [f'{self._format_user_phid(phid, slack=slack)}' for phid in revision.blocker_phids]
 
         MAX_LENGTH = 50
         revision_title = revision.title if len(revision.title) < MAX_LENGTH else (revision.title[:MAX_LENGTH - 3] + '...')
 
-        report.append(
-            f'{count}. <{revision.url}|{revision.revision_id}> - `{repo_link}` - _{revision_title}_ by {self._format_user_phid(revision.author_phid)}'
-        )
+        if slack:
+            item = f'{count}. <{revision.url}|{revision.revision_id}> - `{repo_link}` - _{revision_title}_ by {self._format_user_phid(revision.author_phid, slack=slack)}'  # noqa
+        else:
+            item = f'{count}. [{revision.revision_id}]({revision.url}) - <code>{repo_link}</code> - *{revision_title}* by {self._format_user_phid(revision.author_phid, slack=slack)}'  # noqa
+        report.append(item)
+
         reviewers_msg = []
+
         if len(acceptors) > 0:
-            reviewers_msg.append(f":heavy_check_mark: {', '.join(acceptors)}")
+            icon = ':heavy_check_mark:'
+            icon_separator = ' ' if slack else HTML_ICON_SEPARATOR
+
+            if not slack:
+                icon = emoji.emojize(icon, use_aliases=True)
+
+            reviewers_msg.append(f"{icon}{icon_separator}{', '.join(acceptors)}")
+
         if len(blockers) > 0:
             if len(reviewers_msg) > 0:
                 reviewers_msg.append('; ')
             else:
                 pass
-            reviewers_msg.append(f":no_entry_sign: {', '.join(blockers)}")
+
+            icon = ':no_entry_sign:'
+            icon_separator = ' ' if slack else HTML_ICON_SEPARATOR
+
+            if not slack:
+                icon = emoji.emojize(icon, use_aliases=True)
+
+            reviewers_msg.append(f"{icon}{icon_separator}{', '.join(blockers)}")
 
         if len(reviewers_msg) > 0:
-            report.append(f"    {''.join(reviewers_msg)}")
+            separator = (' ' * 4) if slack else ('&nbsp;' * 4)
+            report.append(f"{separator}{''.join(reviewers_msg)}")
 
         report.append('')
 
@@ -157,7 +186,7 @@ class RevisionStatusReport(PhablyticsReport):
 
             attachments.append({
                 'pretext': f":warning: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} to be reviewed*: _(newest first)_",
-                'text': '\n'.join(report).encode('utf-8').decode('utf-8',),
+                'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
                 # 'color': 'warning',  # Slack-yellow, has an orange hue
                 'color': '#f2c744',
             })
@@ -174,7 +203,7 @@ class RevisionStatusReport(PhablyticsReport):
 
             attachments.append({
                 'pretext': f":arrows_counterclockwise: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('require', num_revisions)} changes*: _(newest first)_",
-                'text': '\n'.join(report).encode('utf-8').decode('utf-8',),
+                'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
                 'color': '#e8912d',  # orange
             })
 
@@ -190,7 +219,7 @@ class RevisionStatusReport(PhablyticsReport):
 
             attachments.append({
                 'pretext': f":no_entry_sign: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('is', num_revisions)} blocked*: _(newest first)_",
-                'text': '\n'.join(report).encode('utf-8').decode('utf-8',),
+                'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
                 'color': 'danger',
             })
 
@@ -222,7 +251,7 @@ class RevisionStatusReport(PhablyticsReport):
 
             attachments.append({
                 'pretext': f":white_check_mark: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('is', num_revisions)} accepted and ready to land*: _(oldest first)_",
-                'text': '\n'.join(report).encode('utf-8').decode('utf-8',),
+                'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
                 'color': 'good',
             })
 
@@ -252,3 +281,84 @@ class RevisionStatusReport(PhablyticsReport):
             emoji=self.slack_emoji
          )
         return report
+
+    def generate_text_report(self):
+        lines = []
+
+        # Revisions with 0 reviews
+        num_revisions = len(self.revisions_to_review)
+        if num_revisions > 0:
+            report = []
+            count = 0
+
+            for revision in sorted(self.revisions_to_review, key=lambda r: r.modified_ts, reverse=True):
+                count += 1
+                self._format_and_append_revision_to_report(report, revision, count, slack=False)
+
+            icon = emoji.emojize(':warning:')
+            lines.append(f"{icon}{icon_separator}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} to be reviewed**: *(newest first)*")
+            lines.append('')
+            lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))
+
+        # Revisions with team blockers - change required
+        num_revisions = len(self.revisions_change_required)
+        if num_revisions > 0:
+            report = []
+            count = 0
+
+            for revision in sorted(self.revisions_change_required, key=lambda r: r.modified_ts, reverse=True):
+                count += 1
+                self._format_and_append_revision_to_report(report, revision, count, slack=False)
+
+            icon = emoji.emojize(':arrows_counterclockwise:', use_aliases=True)
+            lines.append(f"{icon}{HTML_ICON_SEPARATOR}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('require', num_revisions)} changes**: *(newest first)*")
+            lines.append('')
+            lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))
+
+        # Revisions with only external blockers
+        num_revisions = len(self.revisions_blocked)
+        if num_revisions > 0:
+            report = []
+            count = 0
+
+            for revision in sorted(self.revisions_blocked, key=lambda r: r.modified_ts, reverse=True):
+                count += 1
+                self._format_and_append_revision_to_report(report, revision, count, slack=False)
+
+            icon = emoji.emojize(':no_entry_sign:', use_aliases=True)
+            lines.append(f"{icon}{HTML_ICON_SEPARATOR}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('is', num_revisions)} blocked**: *(newest first)*")
+            lines.append('')
+            lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))
+
+        # Revisions with 1 approval
+        num_revisions = len(self.revisions_additional_approval)
+        if num_revisions > 0:
+            report = []
+            count = 0
+
+            for revision in sorted(self.revisions_additional_approval, key=lambda r: r.modified_ts, reverse=True):
+                count += 1
+                self._format_and_append_revision_to_report(report, revision, count, slack=False)
+
+            icon = emoji.emojize(':pray:', use_aliases=True)
+            lines.append(f"{icon}{HTML_ICON_SEPARATOR}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} additional approvals**: *(newest first)*")
+            lines.append('')
+            lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))
+
+        # Revisions Accepted
+        num_revisions = len(self.revisions_accepted)
+        if num_revisions > 0:
+            report = []
+            count = 0
+
+            for revision in sorted(self.revisions_accepted, key=lambda r: r.modified_ts):
+                count += 1
+                self._format_and_append_revision_to_report(report, revision, count, slack=False)
+
+            icon = emoji.emojize(':white_check_mark:', use_aliases=True)
+            lines.append(f"{icon}{HTML_ICON_SEPARATOR}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('is', num_revisions)} accepted and ready to land**: *(oldest first)*")
+            lines.append('')
+            lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))
+
+        text_report = '\n'.join(lines)
+        return text_report

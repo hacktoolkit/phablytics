@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Reports</h1>
+
+<p>
+  The following reports are available:
+</p>
+
+<div class="row row-cols-1 row-cols-md-3">
+  {% for report_name, report in reports.items() %}
+  <div class="col mb-4">
+    <div class="card">
+      {#<img src="..." class="card-img-top" alt="...">#}
+      <div class="card-body">
+        <h5 class="card-title">{{ report_name}}</h5>
+        <p class="card-text">
+          {{ report_name }}<br/>
+        </p>
+        <a href="/reports/view/{{ report_name }}" class="btn btn-primary">Show Report</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<p>
+  If you would like to see additional reports, please contact your
+  Phablytics administrator, <a href="{{ phabricator_instance_base_url }}/p/{{ admin_username }}">{{ admin_username }}</a>.
+</p>
+
+{% endblock %}

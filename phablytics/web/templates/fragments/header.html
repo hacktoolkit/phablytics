@@ -1,0 +1,20 @@
+<header>
+  <div class="header sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <span class="navbar-brand mb-0 h1" href="/">Phablytics</span>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          {% for nav_link in nav_links %}
+          <li class="nav-item">
+            <a class="nav-link{% if nav_link.active %} active{% endif %}" href="{{ nav_link.path }}">{{ nav_link.name }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </nav>
+  </div>
+</header>

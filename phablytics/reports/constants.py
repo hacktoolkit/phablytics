@@ -1,0 +1,1 @@
+HTML_ICON_SEPARATOR = '&nbsp;' * 2

@@ -12,6 +12,8 @@ from dataclasses import (
 
 PHABRICATOR_INSTANCE_BASE_URL = 'configure_me'
 
+ADMIN_USERNAME = 'configure_me'
+
 GROUPS = {
     'example-group-the-incredibles' : {
         'id': 9000,
@@ -26,6 +28,7 @@ REVISION_ACCEPTANCE_THRESHOLD = 2
 @dataclass
 class ReportConfig:
     report_type: str
+    html: bool = False
     # Slack
     slack: bool = False
     slack_channel: str = None
