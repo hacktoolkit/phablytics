@@ -6,9 +6,11 @@ import pprint
 from htk import slack_message
 
 # Local Imports
-from .reports import get_report_types
-from .utils import adhoc
-from .utils import whoami
+from .reports.utils import get_report_types
+from .utils import (
+    adhoc,
+    whoami,
+)
 
 
 class PhablyticsCLI:
