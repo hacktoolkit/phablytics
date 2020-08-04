@@ -1,6 +1,9 @@
 # Python Standard Library Imports
 from dataclasses import asdict
 
+# Third Party (PyPI) Imports
+import markdown
+
 
 class PhablyticsReport:
     """This is the base class for other Phablytics reports.
@@ -27,10 +30,19 @@ class PhablyticsReport:
 
         if self.slack:
             report = self.generate_slack_report()
+        elif self.html:
+            report = self.generate_html_report()
         else:
             report = self.generate_text_report()
 
         return report
+
+    def generate_slack_report(self):
+        """Generates a Slack report
+
+        Subclasses MUST override this method
+        """
+        raise Exception('Not implemented')
 
     def generate_text_report(self):
         """Generates a text report
@@ -50,10 +62,20 @@ class PhablyticsReport:
         for attachment in slack_report.attachments:
             if count > 0:
                 report.append('')
-            report.append(attachment['pretext'])
+
+            report.append(attachment.get('pretext', ''))
             report.append(attachment['text'])
             count += 1
 
         report_string = '\n'.join(report).encode('utf-8').decode('utf-8',)
 
         return report_string
+
+    def generate_html_report(self):
+        """Generates an HTML report
+
+        Subclasses MAY override this method
+        """
+        text_report = self.generate_text_report()
+        html_report = markdown.markdown(text_report)
+        return html_report

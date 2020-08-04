@@ -12,10 +12,7 @@ from os import path
 
 # Third Party (PyPI) Imports
 # Always prefer setuptools over distutils
-from setuptools import (
-    find_packages,
-    setup,
-)
+import setuptools
 
 
 here = path.abspath(path.dirname(__file__))
@@ -30,11 +27,14 @@ long_description = 'Analytics, metrics, and reports for Phabricator (https://pha
 with open(path.join(here, 'requirements.txt'), 'r') as f:
     REQUIREMENTS = f.readlines()
 
+with open(path.join(here, 'requirements_web.txt'), 'r') as f:
+    WEB_REQUIREMENTS = f.readlines()
+
 with open(path.join(here, 'VERSION')) as f:
     VERSION = f.read().strip()
 
 
-setup(
+setuptools.setup(
     name='phablytics',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
@@ -79,12 +79,20 @@ setup(
         #'Programming Language :: Python :: 3.5',
     ],
 
+    python_requires='>=3.0',
+
     # What does your project relate to?
     keywords='phabricator slack slack-bot git source-control code-reviews',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+    packages=setuptools.find_packages(
+        exclude=[
+            'contrib',
+            'docs',
+            'tests',
+        ]
+    ),
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
@@ -103,13 +111,23 @@ setup(
     extras_require={
         'dev': [],#['check-manifest'],
         'test': [],#['coverage'],
+        'web': WEB_REQUIREMENTS,
     },
+
+
+    include_pacakge_data=True,
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
     package_data={
         #'sample': ['package_data.dat'],
+        'phablytics': [
+            'web/templates/*.html',
+            'web/templates/**/*.html',
+            'web/templates/**/**/*.html',
+            'web/static/*.css',
+        ],
     },
 
     # Although 'package_data' is the preferred approach, in some case you may
@@ -124,6 +142,7 @@ setup(
     entry_points={
         'console_scripts': [
             'phablytics=phablytics.cli:main',
+            'phablytics-web=phablytics.web.server:main',
         ],
     },
 )

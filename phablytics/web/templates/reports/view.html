@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Report: {{ report_name }}</h1>
+
+{{ report_content|safe }}
+
+{% endblock %}

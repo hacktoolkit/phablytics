@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>Help</h1>
+
+<p>
+  Phablytics is an open source companion for <a href="https://phacility.com/phabricator">Phabricator</a>.
+</p>
+
+<p>
+  To learn more, check out: <a href="{{ github_url }}">{{ github_url }}</a>
+</p>
+
+<p>
+  For help with your local Phablytics instance, please contact your Phablytics administrator, <a href="{{ phabricator_instance_base_url }}/p/{{ admin_username }}">{{ admin_username }}</a>.
+</p>
+
+{% endblock %}

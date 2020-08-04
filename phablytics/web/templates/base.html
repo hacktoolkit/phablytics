@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<!-- Required meta tags -->
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    {% include 'fragments/css/common.html' %}
+
+		<title>{{ page_title }}</title>
+	</head>
+	<body>
+    {% include 'fragments/header.html' %}
+    <div id="main" class="container-fluid">
+      {#{% include 'fragments/breadcrumbs.html' %}#}
+      {% block content %}{% endblock %}
+    </div>
+    {% include 'fragments/footer.html' %}
+
+    {% include 'fragments/js/nonblocking.html' %}
+	</body>
+</html>
