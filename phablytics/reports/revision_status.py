@@ -9,12 +9,7 @@ from phablytics.reports.utils import (
     pluralize_noun,
     pluralize_verb,
 )
-from phablytics.settings import (
-    REVISION_ACCEPTANCE_THRESHOLD,
-    REVISION_AGE_THRESHOLD_DAYS,
-    REVISION_STATUS_REPORT_QUERY_KEY,
-    TEAM_USERNAMES,
-)
+from phablytics.settings import REVISION_ACCEPTANCE_THRESHOLD
 from phablytics.utils import (
     fetch_differential_revisions,
     get_repos_by_phid,
@@ -51,9 +46,9 @@ class RevisionStatusReport(PhablyticsReport):
         """Prepares the Revision Status Report
         """
         # get revisions
-        date_created = (datetime.datetime.now() - datetime.timedelta(days=REVISION_AGE_THRESHOLD_DAYS)).replace(hour=0, minute=0, second=0)
+        date_created = (datetime.datetime.now() - datetime.timedelta(days=self.threshold_days)).replace(hour=0, minute=0, second=0)
         active_revisions = fetch_differential_revisions(
-            REVISION_STATUS_REPORT_QUERY_KEY,
+            self.query_key,
             modified_after_dt=date_created
         )
 
@@ -92,7 +87,7 @@ class RevisionStatusReport(PhablyticsReport):
         for revision in revisions_with_blocks:
             team_blockers = list(
                 filter(
-                    lambda phid: self._get_phid_username(phid) in TEAM_USERNAMES,
+                    lambda phid: self._get_phid_username(phid) in self.usernames,
                     revision.blocker_phids
                 )
             )
@@ -237,8 +232,9 @@ class RevisionStatusReport(PhablyticsReport):
         ]
 
         DIFF_ABSENT_MESSAGES = [
-            "It's code review time... but what a shame, there are no diffs to review :disappointed:. Let us write more code!",
-            'No code reviews today. Enjoy the extra time! :sunglasses:',
+            # "It's code review time... but what a shame, there are no diffs to review :disappointed:. Let us write more code!",
+            "It's code review time... and all the diffs have already been reviewed :tada:. Let's write more code!",
+            'There are no pending code reviews. Enjoy the extra time! :sunglasses:',
         ]
 
         context = {
@@ -249,5 +245,10 @@ class RevisionStatusReport(PhablyticsReport):
 
         slack_text = 'Greetings Team!\n\n%(message)s' % context
 
-        report = SlackMessage(slack_text, attachments)
+        report = SlackMessage(
+            text=slack_text,
+            attachments=attachments,
+            username=self.slack_username,
+            emoji=self.slack_emoji
+         )
         return report

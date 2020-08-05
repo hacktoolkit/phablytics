@@ -6,7 +6,11 @@ import pprint
 from htk import slack_message
 
 # Local Imports
-from .reports.utils import get_report_types
+from .reports.utils import (
+    get_report_config,
+    get_report_names,
+    get_report_types,
+)
 from .utils import (
     adhoc,
     whoami,
@@ -15,6 +19,7 @@ from .utils import (
 
 class PhablyticsCLI:
     def __init__(self):
+        self.report_names = get_report_names()
         self.report_types = get_report_types()
 
     def execute(self):
@@ -28,23 +33,32 @@ class PhablyticsCLI:
         elif self.whoami:
             user = whoami()
             pprint.pprint(user.raw_data)
-        elif self.report_type:
-            report_class = self.report_types.get(self.report_type)
+        elif self.report_name:
+            report_config = get_report_config(self.report_name, self)
+            report_class = self.report_types.get(report_config.report_type)
             if report_class:
-                report = report_class(as_slack=self.slack).generate_report()
-                if self.slack:
-                    slack_channel = self.slack_channel
-                    slack_message(text=report.text, attachments=report.attachments, channel=slack_channel)
+                report = report_class(report_config).generate_report()
+                if report_config.slack:
+                    slack_channel = report_config.slack_channel
+                    slack_message(
+                        text=report.text,
+                        attachments=report.attachments,
+                        channel=slack_channel,
+                        username=report.username,
+                        icon_emoji=report.emoji
+                    )
                 else:
                     print(report)
+            else:
+                raise Exception(f'Invalid report type: {report_config.report_type}')
 
     def parse_args(self):
         arg_parser = argparse.ArgumentParser(description='Phablytics report generator.')
-        report_type_choices = sorted(self.report_types.keys())
+        report_name_choices = sorted(self.report_names)
         arg_parser.add_argument(
-            '-r', '--report_type',
-            help=f"Report type.",
-            choices=report_type_choices,
+            '-r', '--report_name',
+            help=f"Report name.",
+            choices=report_name_choices,
             required=False
         )
         arg_parser.add_argument(

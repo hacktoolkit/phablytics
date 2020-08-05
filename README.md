@@ -4,6 +4,19 @@
 # phablytics
 Analytics, metrics, and reports for Phabricator (https://phacility.com/phabricator/).
 
+# Get Started
+
+1. `/path/to/pip install phablytics` in your local project.
+1. On your first install on a new machine, you'll want to update interfaces:
+    ```
+    from phabricator import Phabricator
+    phab = Phabricator()
+    phab.update_interfaces()
+    phab.user.whoami()
+    ```
+1. Create a `settings.py` file based off of `settings.py`
+1. Run the Phablytics CLI and see help: `/path/to/phablytics -h`
+
 # Authors and Maintainers
 
 [Hacktoolkit](https://github.com/hacktoolkit) and [Jonathan Tsai](https://github.com/jontsai)

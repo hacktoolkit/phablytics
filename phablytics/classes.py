@@ -2,9 +2,11 @@
 import datetime
 
 # Local Imports
-from .settings import GROUPS
-from .settings import PHABRICATOR_INSTANCE_BASE_URL
-from .settings import REVISION_ACCEPTANCE_THRESHOLD
+from .settings import (
+    GROUPS,
+    PHABRICATOR_INSTANCE_BASE_URL,
+    REVISION_ACCEPTANCE_THRESHOLD,
+)
 
 
 DATE_FORMAT = '%Y-%m-%d'

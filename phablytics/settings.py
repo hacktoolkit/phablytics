@@ -1,6 +1,10 @@
 # Python Standard Library Imports
 import os
 import sys
+from dataclasses import (
+    dataclass,
+    field,
+)
 
 
 ##
@@ -14,30 +18,78 @@ GROUPS = {
     },
 }
 
-# Reports
-REVISION_AGE_THRESHOLD_DAYS = 14
 REVISION_ACCEPTANCE_THRESHOLD = 2
-REVISION_STATUS_REPORT_QUERY_KEY = 'configure_me'
 
-NEW_PROJECT_TASKS_BOARD_NAMES = 'configure_me'
-NEW_PROJECT_TASKS_THRESHOLD_HOURS = 4
+# Reports
 
-UPCOMING_PROJECT_TASKS_DUE_REPORT_PROJECT_NAME = 'configure_me'
-UPCOMING_PROJECT_TASKS_DUE_REPORT_COLUMN_NAMES = []
-UPCOMING_PROJECT_TASKS_DUE_REPORT_ORDER = [
-    '-id', # oldest tasks first
-]
-UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_LOWER_HOURS = 24  # 1 day
-UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_UPPER_HOURS = 96  # 4 days
-UPCOMING_PROJECT_TASKS_DUE_REPORT_EXCLUDED_TASKS = []
-UPCOMING_PROJECT_TASKS_DUE_REPORT_CUSTOM_EXCLUSIONS = []
 
-URGENT_AND_OVERDUE_TASKS_THRESHOLD_HOURS = UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_LOWER_HOURS
-URGENT_AND_OVERDUE_TASKS_REPORT_CUSTOM_EXCLUSIONS = []
+@dataclass
+class ReportConfig:
+    report_type: str
+    # Slack
+    slack: bool = False
+    slack_channel: str = None
+    slack_username: str = 'Phablytics Bot'
+    slack_emoji: str = None
+    # Shared fields
+    query_key: str = None
+    order: list = field(
+        default_factory=lambda: [
+            '-id',  # oldest tasks first
+        ]
+    )
+    # RevisionStatus
+    threshold_days: int = 14
+    # NewProjectTasks
+    project_names: list = field(default_factory=list)
+    # UpcomingProjectTasksDue, UrgentAndOverdueTasks, NewProjectTasks
+    project_name: str = None
+    column_names: list = field(default_factory=list)
+    threshold_lower_hours: int = 24  # 1 day
+    threshold_upper_hours: int = 96  # 4 days
+    excluded_tasks: list = field(default_factory=list)
+    custom_exclusions: list = field(default_factory=list)
+    # RecentTasks, RevisionStatus
+    usernames: list = field(default_factory=list)
+
 
 TEAM_USERNAMES = []
 
-RECENT_TASKS_REPORT_USERNAMES = []
+
+REPORTS = {
+    # These are sample ReportConfigs that should be customized in your local settings.py
+    'RevisionStatus': ReportConfig(
+        report_type='RevisionStatus',
+        query_key='configure_me',
+        threshold_days=14
+    ),
+    'NewProjectTasks': ReportConfig(
+        report_type='NewProjectTasks',
+        project_names=[
+            'configure_me'
+        ]
+    ),
+    'UpcomingProjectTasksDue': ReportConfig(
+        report_type='UpcomingProjectTasksDue',
+        project_name=None,
+        column_names=[],
+        excluded_tasks=[],
+        custom_exclusions=[]
+    ),
+    'UrgentAndOverdueProjectTasks': ReportConfig(
+        report_type='UrgentAndOverdueProjectTasks',
+        project_name=None,
+        column_names=[],
+        excluded_tasks=[],
+        custom_exclusions=[]
+    ),
+    'RecentTasks': ReportConfig(
+        report_type='RecentTasks',
+        usernames=TEAM_USERNAMES,
+        slack=False,
+        slack_channel=None
+    ),
+}
 
 
 ##

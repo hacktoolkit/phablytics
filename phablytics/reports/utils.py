@@ -1,5 +1,36 @@
 # Python Standard Library Imports
 from collections import namedtuple
+from dataclasses import (
+    asdict,
+    dataclass,
+    field,
+)
+
+# Phablytics Imports
+from phablytics.settings import (
+    REPORTS,
+    ReportConfig,
+)
+
+
+def get_report_names():
+    report_names = list(REPORTS.keys())
+    return report_names
+
+
+def get_report_config(report_name, overrides=None):
+    report_config_dict = asdict(REPORTS[report_name])
+
+    if overrides:
+        for key in report_config_dict.keys():
+            if hasattr(overrides, key):
+                value = getattr(overrides, key)
+                if value:
+                    report_config_dict[key] = value
+
+    report_config = ReportConfig(**report_config_dict)
+
+    return report_config
 
 
 def get_report_types():
@@ -24,8 +55,12 @@ def get_report_types():
     return report_types
 
 
-class SlackMessage(namedtuple('SlackMessage', 'text,attachments')):
-    pass
+@dataclass
+class SlackMessage:
+    text: str = None
+    attachments: list = field(default_factory=list)
+    username: str = None
+    emoji: str = None
 
 
 def pluralize_noun(noun, count):

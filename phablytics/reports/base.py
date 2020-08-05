@@ -1,8 +1,15 @@
+# Python Standard Library Imports
+from dataclasses import asdict
+
+
 class PhablyticsReport:
     """This is the base class for other Phablytics reports.
     """
-    def __init__(self, as_slack=False, *args, **kwargs):
-        self.as_slack = as_slack
+    def __init__(self, report_config, *args, **kwargs):
+        self.report_config = report_config
+
+        for key, value in asdict(report_config).items():
+            setattr(self, key, value)
 
     def _prepare_report(self):
         """Any prep logic for generating a report
@@ -18,7 +25,7 @@ class PhablyticsReport:
         """
         self._prepare_report()
 
-        if self.as_slack:
+        if self.slack:
             report = self.generate_slack_report()
         else:
             report = self.generate_text_report()

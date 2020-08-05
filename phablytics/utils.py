@@ -90,7 +90,15 @@ def fetch_differential_revisions(query_key, modified_after_dt=None, modified_bef
 
     https://secure.phabricator.com/conduit/method/differential.revision.search/
     """
-    constraints = {}
+    constraints = {
+        'statuses': [
+            'accepted',
+            'changes-planned',
+            'needs-review',
+            # 'published',
+            # 'abandoned',
+        ],
+    }
     if modified_after_dt:
         constraints['modifiedStart'] = int(modified_after_dt.timestamp())
     if modified_before_dt:

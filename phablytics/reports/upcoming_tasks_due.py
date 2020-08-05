@@ -7,15 +7,6 @@ from phablytics.reports.utils import (
     SlackMessage,
     pluralize_noun,
 )
-from phablytics.settings import (
-    UPCOMING_PROJECT_TASKS_DUE_REPORT_COLUMN_NAMES,
-    UPCOMING_PROJECT_TASKS_DUE_REPORT_CUSTOM_EXCLUSIONS,
-    UPCOMING_PROJECT_TASKS_DUE_REPORT_EXCLUDED_TASKS,
-    UPCOMING_PROJECT_TASKS_DUE_REPORT_ORDER,
-    UPCOMING_PROJECT_TASKS_DUE_REPORT_PROJECT_NAME,
-    UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_LOWER_HOURS,
-    UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_UPPER_HOURS,
-)
 from phablytics.utils import (
     get_maniphest_tasks_by_project_name,
     get_project_columns_by_project_name,
@@ -26,28 +17,21 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
     """The Upcoming Project Tasks Due Report shows a list of tasks ordered by creation date or custom key.
     """
     HEADING = 'Upcoming Tasks Due Soon'
-    EXCLUSIONS = UPCOMING_PROJECT_TASKS_DUE_REPORT_CUSTOM_EXCLUSIONS
-    TIMELINE = f'within the next {UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_LOWER_HOURS} - {UPCOMING_PROJECT_TASKS_DUE_THRESHOLD_UPPER_HOURS} hours'
 
-    def __init__(self, columns=None, order=None, *args, **kwargs):
-        if order is None:
-            order = UPCOMING_PROJECT_TASKS_DUE_REPORT_ORDER
-
-        self.project_name = UPCOMING_PROJECT_TASKS_DUE_REPORT_PROJECT_NAME
-        self.columns = UPCOMING_PROJECT_TASKS_DUE_REPORT_COLUMN_NAMES
-
-        #self.project = project
-        #self.columns = columns
-        self.order = order
-
+    def __init__(self, *args, **kwargs):
         super(UpcomingProjectTasksDueReport, self).__init__(*args, **kwargs)
 
     class _ReportSection(namedtuple('ReportSection', 'column_phid,column,tasks')):
         pass
 
+    @property
+    def timeline(self):
+        timeline = f'within the next {self.threshold_lower_hours} - {self.threshold_upper_hours} hours'
+        return timeline
+
     def _prepare_report(self):
-        if self.columns:
-            columns = get_project_columns_by_project_name(self.project_name, self.columns)
+        if self.column_names:
+            columns = get_project_columns_by_project_name(self.project_name, self.column_names)
             column_lookup = {
                 column.phid: column
                 for column
@@ -60,11 +44,11 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
 
         def _should_include(task):
             should_include = (
-                task.id_ not in UPCOMING_PROJECT_TASKS_DUE_REPORT_EXCLUDED_TASKS
+                task.id_ not in self.excluded_tasks
                 and not any([
                     custom_exclusion(task)
                     for custom_exclusion
-                    in self.EXCLUSIONS
+                    in self.custom_exclusions
                 ])
             )
             return should_include
@@ -114,7 +98,7 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
                 # omit section if no tasks for that section
                 pass
 
-        slack_text = f'*{self.project_name} - {self.HEADING}* _({self.TIMELINE})_'
+        slack_text = f'*{self.project_name} - {self.HEADING}* _({self.timeline})_'
 
         if len(attachments) == 0:
             slack_text = '{}\n{}'.format(
@@ -122,6 +106,11 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
                 '_All caught up -- there are no tasks for this section._'
             )
 
-        report = SlackMessage(slack_text, attachments)
+        report = SlackMessage(
+            text=slack_text,
+            attachments=attachments,
+            username=self.slack_username,
+            emoji=self.slack_emoji
+        )
 
         return report

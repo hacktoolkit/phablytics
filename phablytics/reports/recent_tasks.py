@@ -1,6 +1,6 @@
 # Phablytics Imports
 from phablytics.reports.base import PhablyticsReport
-from phablytics.settings import RECENT_TASKS_REPORT_USERNAMES
+from phablytics.reports.utils import SlackMessage
 from phablytics.utils import (
     get_maniphest_tasks_by_owners,
     get_users_by_username,
@@ -12,7 +12,7 @@ class RecentTasksReport(PhablyticsReport):
         super(RecentTasksReport, self).__init__(*args, **kwargs)
 
     def generate_text_report(self):
-        usernames = RECENT_TASKS_REPORT_USERNAMES
+        usernames = self.report_config.usernames
         users = get_users_by_username(usernames)
         users_lookup = {
             user.phid: user
@@ -59,5 +59,10 @@ class RecentTasksReport(PhablyticsReport):
     def generate_slack_report(self):
         text_report = self.generate_text_report()
         text = '```\n%s\n```' % text_report
-        report = SlackMessage(text, None)
+        report = SlackMessage(
+            text=text,
+            attachments=None,
+            username=self.slack_username,
+            emoji=self.slack_emoji
+        )
         return report
