@@ -92,11 +92,13 @@ def fetch_differential_revisions(query_key, modified_after_dt=None, modified_bef
     """
     constraints = {
         'statuses': [
-            'accepted',
-            'changes-planned',
-            'needs-review',
-            # 'published',
             # 'abandoned',
+            'accepted',
+            # 'changes-planned',
+            # 'draft',
+            'needs-review',
+            'needs-revision',
+            # 'published'
         ],
     }
     if modified_after_dt:
@@ -109,6 +111,7 @@ def fetch_differential_revisions(query_key, modified_after_dt=None, modified_bef
         constraints=constraints,
         attachments={'reviewers': True}
     )
+
     revisions = [Revision(revision_data) for revision_data in results.data]
 
     return revisions
