@@ -158,15 +158,28 @@ def get_maniphest_tasks_by_project_name(project_name, column_phids=None, order=N
             '-id',  # oldest first
         ]
 
-    results = PHAB.maniphest.search(
-        constraints=constraints,
-        order=order
-    )
-    tasks = [
-        Maniphest(task_data)
-        for task_data
-        in results.data
-    ]
+    tasks = []
+    has_more_results = True
+    after = None
+
+    while has_more_results:
+        # handle pagination, since limits are 100 at a time
+        results = PHAB.maniphest.search(
+            constraints=constraints,
+            order=order,
+            after=after
+        )
+
+        cursor = results.get('cursor', {})
+        after = cursor.get('after', None)
+        has_more_results = after is not None
+
+        tasks.extend([
+            Maniphest(task_data)
+            for task_data
+            in results.data
+        ])
+
     return tasks
 
 

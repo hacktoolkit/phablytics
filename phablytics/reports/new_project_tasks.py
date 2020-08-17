@@ -31,10 +31,11 @@ class NewProjectTasksReport(PhablyticsReport):
     def _prepare_report(self):
 
         def _should_include(task):
-            # filter out assigned tasks
             should_include = (
+                # exclude assigned tasks
                 task.owner_phid is None
-                and task.created_at > datetime.datetime.now() - datetime.timedelta(hours=self.threshold_lower_hours)
+                # exclude tasks created prior to threshold_lower_hours
+                and task.created_at > (datetime.datetime.now() - datetime.timedelta(hours=self.threshold_lower_hours))
             )
             return should_include
 
