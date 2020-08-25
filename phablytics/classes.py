@@ -1,6 +1,9 @@
 # Python Standard Library Imports
 import datetime
 
+# Third Party (PyPI) Imports
+import markdown
+
 # Local Imports
 from .settings import (
     GROUPS,
@@ -111,6 +114,15 @@ class PhabricatorEntity:
 
 
 class Maniphest(PhabricatorEntity):
+    def __str__(self):
+        value = f'**[{self.task_id}]({self.url})** {self.name} ({self.status}, {self.points} pts)'
+        return value
+
+    @property
+    def html(self):
+        html = markdown.markdown(self.__str__())
+        return html
+
     ##
     # Primary attributes
 
@@ -131,6 +143,11 @@ class Maniphest(PhabricatorEntity):
     def owner_phid(self):
         owner_phid = self.fields['ownerPHID']
         return owner_phid
+
+    @property
+    def points(self):
+        points = self.fields['points'] or 0
+        return points
 
 
 class Project(PhabricatorEntity):

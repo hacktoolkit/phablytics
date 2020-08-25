@@ -122,46 +122,18 @@ def fetch_differential_revisions(query_key, modified_after_dt=None, modified_bef
 # Maniphest
 
 
-def get_maniphest_tasks_by_owners(owner_phids):
-    constraints = {
-        'assigned': owner_phids,
-    }
-    results = PHAB.maniphest.search(
-        constraints=constraints
-    )
-    tasks = [
-        Maniphest(task_data)
-        for task_data
-        in results.data
-    ]
-    return tasks
-
-
-def get_maniphest_tasks_by_project_name(project_name, column_phids=None, order=None):
-    """Get Maniphest tasks for a project
-
+def get_maniphest_tasks(constraints, order=None):
+    """Get Maniphest tasksa
     https://secure.phabricator.com/conduit/method/maniphest.search/
     """
-    project = get_project_by_name(project_name)
+    tasks = []
+    has_more_results = True
+    after = None
 
-    constraints = {
-        'projects': [
-            project.phid,
-        ],
-        'statuses': [
-            'open',
-        ],
-    }
-    if column_phids:
-        constraints['columnPHIDs'] = column_phids
     if order is None:
         order = [
             '-id',  # oldest first
         ]
-
-    tasks = []
-    has_more_results = True
-    after = None
 
     while has_more_results:
         # handle pagination, since limits are 100 at a time
@@ -180,6 +152,73 @@ def get_maniphest_tasks_by_project_name(project_name, column_phids=None, order=N
             for task_data
             in results.data
         ])
+
+    return tasks
+
+
+def get_maniphest_tasks_by_owners(owner_phids):
+    constraints = {
+        'assigned': owner_phids,
+    }
+
+    tasks = get_maniphest_tasks(constraints)
+
+    return tasks
+
+
+def get_maniphest_tasks_by_project_name(project_name, column_phids=None, order=None):
+    """Get Maniphest tasks for a project
+    """
+    project = get_project_by_name(project_name)
+
+    constraints = {
+        'projects': [
+            project.phid,
+        ],
+        'statuses': [
+            'open',
+        ],
+    }
+    if column_phids:
+        constraints['columnPHIDs'] = column_phids
+    if order is None:
+        order = [
+            '-id',  # oldest first
+        ]
+
+    tasks = get_maniphest_tasks(constraints, order=order)
+
+    return tasks
+
+
+def get_bugs_created_over_period(period_start, period_end):
+    """Returns a list of bugs created over a period
+    """
+    constraints = {
+        'subtypes': [
+            'bug',
+        ],
+        'createdStart': int(period_start.timestamp()),
+        'createdEnd': int(period_end.timestamp()),
+    }
+
+    tasks = get_maniphest_tasks(constraints)
+
+    return tasks
+
+
+def get_bugs_closed_over_period(period_start, period_end):
+    """Returns a list of bugs created over a period
+    """
+    constraints = {
+        'subtypes': [
+            'bug',
+        ],
+        'closedStart': int(period_start.timestamp()),
+        'closedEnd': int(period_end.timestamp()),
+    }
+
+    tasks = get_maniphest_tasks(constraints)
 
     return tasks
 

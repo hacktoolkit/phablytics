@@ -9,6 +9,7 @@ from werkzeug.routing import BaseConverter
 # Phablytics Imports
 from phablytics.web.help import help_page
 from phablytics.web.home import home_page
+from phablytics.web.metrics import metrics_page
 from phablytics.web.reports import reports_page
 from phablytics.web.utils import custom_render_template as _r
 
@@ -43,6 +44,7 @@ application.url_map.converters['regex'] = RegexConverter
 
 application.register_blueprint(help_page)
 application.register_blueprint(home_page)
+application.register_blueprint(metrics_page)
 application.register_blueprint(reports_page)
 
 
