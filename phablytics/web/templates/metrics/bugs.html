@@ -76,23 +76,43 @@
 <br/>
 <br/>
 
-<ul>
+<div class="accordion" id="bugs-accordion">
   {% for bug_metric in metrics %}
-  <li>
-    <b>{{ bug_metric.period_name }}</b>:
-    <i>
-      {{ bug_metric.num_closed }} closed vs {{ bug_metric.num_created }} created
-      (Ratio: <span style="color: {% if bug_metric.ratio > 1 %}green{% else %}red{% endif %};">{{ bug_metric.ratio }}</span>)
-    </i>
-    {#
-    <ul>
-      {% for bug in bug_metric.bugs %}
-      <li>{{ bug.html|safe }}
-      {% endfor %}
-    </ul>
-    #}
-  </li>
+  <div class="card">
+    <div class="card-header" id="heading-{{ loop.index }}">
+      <h2 class="mb-0">
+        <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse" data-target="#collapse-{{ loop.index }}">
+          <b>{{ bug_metric.period_name }}</b>:
+          <i>
+            {{ bug_metric.num_closed }} closed vs {{ bug_metric.num_created }} created
+            (Ratio: <span style="color: {% if bug_metric.ratio > 1 %}green{% else %}red{% endif %};">{{ bug_metric.ratio }}</span>)
+          </i>
+        </button>
+      </h2>
+    </div>
+    <div id="collapse-{{ loop.index }}" class="collapse" aria-labelledby="heading-{{ loop.index }}" data-parent="#bugs-accordion">
+      <div class="card-body">
+        <p>
+          <b>Bugs Closed</b>
+        </p>
+        <ul>
+          {% for bug in bug_metric.bugs_closed %}
+          <li>{{ bug.html|safe }}</li>
+          {% endfor %}
+        </ul>
+
+        <p>
+          <b>Bugs Created</b>
+        </p>
+        <ul>
+          {% for bug in bug_metric.bugs_created %}
+          <li>{{ bug.html|safe }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
   {% endfor %}
-</ul>
+</div>
 
 {% endblock %}

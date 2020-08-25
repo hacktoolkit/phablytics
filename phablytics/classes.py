@@ -115,7 +115,7 @@ class PhabricatorEntity:
 
 class Maniphest(PhabricatorEntity):
     def __str__(self):
-        value = f'**[{self.task_id}]({self.url})** {self.name} ({self.status}, {self.points} pts)'
+        value = f'**[{self.task_id}]({self.url})** {self.name} *({self.status_value}, {self.points} pts)*'
         return value
 
     @property
