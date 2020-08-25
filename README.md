@@ -17,6 +17,12 @@ Analytics, metrics, and reports for Phabricator (https://phacility.com/phabricat
 1. Create a `settings.py` file based off of `settings.py`
 1. Run the Phablytics CLI and see help: `/path/to/phablytics -h`
 
+# Releasing
+
+1. Update both `VERSION` as well as `__version__` in `phablytics/__init__.py`.
+1. Regenerate a new package for distribution: `make repackage`
+1. Upload to PyPI: `make upload`
+
 # Authors and Maintainers
 
 [Hacktoolkit](https://github.com/hacktoolkit) and [Jonathan Tsai](https://github.com/jontsai)

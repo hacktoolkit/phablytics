@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Bugs</h1>
+
+<canvas id="metrics_chart"></canvas>
+
+<script>
+  var BUG_METRICS = {{ metrics_json|safe }};
+
+  var COLOR_BLUE = 'rgb(12, 23, 177)';
+  var COLOR_GREEN = 'rgb(21, 195, 21)';
+  var COLOR_PINK = 'rgb(255, 99, 132)';
+
+  var ctx = document.getElementById('metrics_chart').getContext('2d');
+  var chart = new Chart(ctx, {
+      // The type of chart we want to create
+      type: 'bar',
+
+      // The data for our dataset
+      data: {
+          labels: _.map(BUG_METRICS, (bugMetric) => {
+              return bugMetric.period_name;
+          }),
+          datasets: [
+              {
+                  label: 'Bug Ratio',
+                  backgroundColor: COLOR_BLUE,
+                  borderColor: COLOR_BLUE,
+                  data: _.map(BUG_METRICS, (bugMetric) => bugMetric.ratio),
+                  type: 'line',
+                  fill: false,
+                  lineTension: 0,
+                  yAxisID: 'bugRate',
+                  order: 1
+              },
+              {
+                  label: 'Bugs Closed',
+                  backgroundColor: COLOR_GREEN,
+                  borderColor: COLOR_GREEN,
+                  data: _.map(BUG_METRICS, (bugMetric) => bugMetric.num_closed),
+                  yAxisID: 'numBugs',
+                  order: 2
+              },
+              {
+                  label: 'Bug Created',
+                  backgroundColor: COLOR_PINK,
+                  borderColor: COLOR_PINK,
+                  data: _.map(BUG_METRICS, (bugMetric) => bugMetric.num_created),
+                  yAxisID: 'numBugs',
+                  order: 3
+              }
+          ]
+      },
+
+      // Configuration options go here
+      options: {
+          scales: {
+              yAxes: [
+                  {
+                      id: 'numBugs',
+                      type: 'linear',
+                      position: 'left'
+                  },
+                  {
+                      id: 'bugRate',
+                      type: 'linear',
+                      position: 'right'
+                  }
+              ]
+          }
+      }
+  });
+</script>
+
+<br/>
+<br/>
+
+<ul>
+  {% for bug_metric in metrics %}
+  <li>
+    <b>{{ bug_metric.period_name }}</b>:
+    <i>
+      {{ bug_metric.num_closed }} closed vs {{ bug_metric.num_created }} created
+      (Ratio: <span style="color: {% if bug_metric.ratio > 1 %}green{% else %}red{% endif %};">{{ bug_metric.ratio }}</span>)
+    </i>
+    {#
+    <ul>
+      {% for bug in bug_metric.bugs %}
+      <li>{{ bug.html|safe }}
+      {% endfor %}
+    </ul>
+    #}
+  </li>
+  {% endfor %}
+</ul>
+
+{% endblock %}

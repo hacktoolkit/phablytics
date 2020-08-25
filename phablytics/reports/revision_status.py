@@ -296,7 +296,7 @@ class RevisionStatusReport(PhablyticsReport):
                 self._format_and_append_revision_to_report(report, revision, count, slack=False)
 
             icon = emoji.emojize(':warning:')
-            lines.append(f"{icon}{icon_separator}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} to be reviewed**: *(newest first)*")
+            lines.append(f"{icon}{HTML_ICON_SEPARATOR}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} to be reviewed**: *(newest first)*")
             lines.append('')
             lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))
 

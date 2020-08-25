@@ -6,6 +6,10 @@ NAV_LINKS = [
         'path': '/',
     },
     {
+        'name': 'Metrics',
+        'path': '/metrics',
+    },
+    {
         'name': 'Reports',
         'path': '/reports',
     },

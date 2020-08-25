@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Metrics</h1>
+
+<div class="row row-cols-1 row-cols-md-3">
+  {% for metric in metrics %}
+  <div class="col mb-4">
+    <div class="card">
+      {#<img src="..." class="card-img-top" alt="...">#}
+      <div class="card-body">
+        <h5 class="card-title">{{ metric.name }}</h5>
+        <p class="card-text">
+          {{ metric.description }}<br/>
+        </p>
+        <a href="/metrics/{{ metric.slug }}" class="btn btn-primary">Show Metric</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}
