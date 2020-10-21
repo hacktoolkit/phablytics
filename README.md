@@ -7,6 +7,7 @@ Analytics, metrics, and reports for Phabricator (https://phacility.com/phabricat
 # Get Started
 
 1. `/path/to/pip install phablytics` in your local project.
+    1. Or, if installing the web server: `/path/to/pip install phablytics[web]`
 1. On your first install on a new machine, you'll want to update interfaces:
     ```
     from phabricator import Phabricator
