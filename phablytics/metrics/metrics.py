@@ -32,7 +32,7 @@ class MetricMeta(type):
 
 
 class BugMetric(
-    namedtuple('BugRate', 'period_name,period_start,period_end,bugs_created,bugs_closed'),
+    namedtuple('BugMetric', 'period_name,period_start,period_end,bugs_created,bugs_closed'),
     metaclass=MetricMeta
 ):
     """Tracks bugs opened vs closed over time.
