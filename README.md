@@ -19,7 +19,8 @@ Analytics, metrics, and reports for Phabricator (https://phacility.com/phabricat
 
 # Releasing
 
-1. Update both `VERSION` as well as `__version__` in `phablytics/__init__.py`.
+1. Update both `VERSION` as well as `__version__` in `phablytics/__init__.py`
+1. Update the `CHANGELOG.md` with the details of this release
 1. Regenerate a new package for distribution: `make repackage`
 1. Upload to PyPI: `make upload`
 
