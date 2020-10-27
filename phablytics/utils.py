@@ -86,7 +86,12 @@ def adhoc(method_path, method_args=None):
 # Differential
 
 
-def fetch_differential_revisions(query_key, modified_after_dt=None, modified_before_dt=None):
+def fetch_differential_revisions(
+    query_key=None,
+    reviewer_phids=None,
+    modified_after_dt=None,
+    modified_before_dt=None
+):
     """Get revisions for `query_key` between `modified_after_dt` and `modified_before_dt`
 
     https://secure.phabricator.com/conduit/method/differential.revision.search/
@@ -102,6 +107,9 @@ def fetch_differential_revisions(query_key, modified_after_dt=None, modified_bef
             # 'published'
         ],
     }
+
+    if reviewer_phids:
+        constraints['reviewerPHIDs'] = reviewer_phids
     if modified_after_dt:
         constraints['modifiedStart'] = int(modified_after_dt.timestamp())
     if modified_before_dt:
@@ -227,7 +235,7 @@ def get_bugs_closed_over_period(period_start, period_end):
 # Projects
 
 
-def get_project_by_name(project_name):
+def get_project_by_name(project_name, include_members=False):
     """Get a project by name
 
     https://secure.phabricator.com/conduit/method/project.search/
@@ -236,7 +244,10 @@ def get_project_by_name(project_name):
     constraints = {
         'query': project_name,
     }
-    results = PHAB.project.search(constraints=constraints)
+    attachments = {}
+    if include_members:
+        attachments['members'] = True
+    results = PHAB.project.search(constraints=constraints, attachments=attachments)
 
     projects = [
         Project(project_data)
@@ -251,6 +262,16 @@ def get_project_by_name(project_name):
         raise Exception('No project named `{}` found.'.format(project_name))
 
     return project
+
+
+def get_projects_by_name(project_names, include_members=False):
+    projects = list(
+        map(
+            lambda x: get_project_by_name(x, include_members=include_members),
+            project_names
+        )
+    )
+    return projects
 
 
 def get_project_columns_by_project_name(project_name, column_names=None):
@@ -279,7 +300,6 @@ def get_project_columns_by_project_name(project_name, column_names=None):
     return project_columns
 
 
-
 ##
 # Repos
 
@@ -303,9 +323,10 @@ def get_users_by_username(usernames):
         constraints=constraints
     )
     users = [
-        User(user_data)
+        user
         for user_data
         in results.data
+        if (user := User(user_data)).username in usernames
     ]
     return users
 

@@ -16,14 +16,19 @@ from phablytics.reports.utils import (
 from phablytics.settings import REVISION_ACCEPTANCE_THRESHOLD
 from phablytics.utils import (
     fetch_differential_revisions,
+    get_projects_by_name,
     get_repos_by_phid,
     get_users_by_phid,
+    get_users_by_username,
 )
 
 
-class RevisionStatusReport(PhablyticsReport):
-    """The Revision Status Report shows a list of Diffs being worked on by a team,
-    and outputs them based on their acceptance/needs review status
+class GroupReviewStatusReport(PhablyticsReport):
+    """The Group Review Status Report shows a list of Diffs with
+    particular reviewers added.
+
+    A typical use case would be a shared library that is
+    maintained by a group of core developers.
     """
     def __init__(self, *args, **kwargs):
         self.repo_phids = []
@@ -32,7 +37,7 @@ class RevisionStatusReport(PhablyticsReport):
         self.repos_lookup = None
         self.users_lookup = None
 
-        super(RevisionStatusReport, self).__init__(*args, **kwargs)
+        super(GroupReviewStatusReport, self).__init__(*args, **kwargs)
 
     def _add_users(self, phids):
         self.user_phids.extend(phids)
@@ -50,20 +55,32 @@ class RevisionStatusReport(PhablyticsReport):
         """Prepares the Revision Status Report
         """
         # get revisions
+        reviewer_users = get_users_by_username(self.reviewers)
+        projects = get_projects_by_name(self.group_reviewers, include_members=True)
+        group_reviewer_phids = [
+            member_phid
+            for project in projects
+            for member_phid in project.member_phids
+        ]
+        reviewer_phids = list(map(lambda x: x.phid, reviewer_users + projects))
+
         date_created = (datetime.datetime.now() - datetime.timedelta(days=self.threshold_days)).replace(hour=0, minute=0, second=0)
         active_revisions = fetch_differential_revisions(
-            self.query_key,
+            reviewer_phids=reviewer_phids,
             modified_after_dt=date_created
         )
 
         # place revisions into buckets
+        revisions_missing_reviewers = []
         revisions_to_review = []
         revisions_with_blocks = []
         revisions_additional_approval = []
         revisions_accepted = []
 
         for revision in active_revisions:
-            if revision.meets_acceptance_criteria:
+            if not revision.has_reviewer_among_group(group_reviewer_phids):
+                revisions_missing_reviewers.append(revision)
+            elif revision.meets_acceptance_criteria:
                 revisions_accepted.append(revision)
             elif revision.is_wip:
                 # skip WIP
@@ -101,6 +118,7 @@ class RevisionStatusReport(PhablyticsReport):
                 revisions_blocked.append(revision)
 
         # finally, assign bucketed revisions
+        self.revisions_missing_reviewers = revisions_missing_reviewers
         self.revisions_to_review = revisions_to_review
         self.revisions_change_required = revisions_change_required
         self.revisions_blocked = revisions_blocked
@@ -126,8 +144,8 @@ class RevisionStatusReport(PhablyticsReport):
         else:
             repo_link = f'[{repo.slug}]({repo.repository_url})'
 
-        acceptors = [f'{self._format_user_phid(phid, slack=slack)}' for phid in revision.acceptor_phids]
-        blockers = [f'{self._format_user_phid(phid, slack=slack)}' for phid in revision.blocker_phids]
+        acceptors = [f'{self._format_user_phid(phid, slack=slack)}' for phid in revision.group_acceptor_phids]
+        blockers = [f'{self._format_user_phid(phid, slack=slack)}' for phid in revision.group_blocker_phids]
 
         MAX_LENGTH = 50
         revision_title = revision.title if len(revision.title) < MAX_LENGTH else (revision.title[:MAX_LENGTH - 3] + '...')
@@ -173,6 +191,21 @@ class RevisionStatusReport(PhablyticsReport):
         """Generates the Revision Status Report with Slack attachments
         """
         attachments = []
+
+        num_revisions = len(self.revisions_missing_reviewers)
+        if num_revisions > 0:
+            report = []
+            count = 0
+
+            for revision in sorted(self.revisions_missing_reviewers, key=lambda r: r.modified_ts, reverse=True):
+                count += 1
+                self._format_and_append_revision_to_report(report, revision, count)
+
+            attachments.append({
+                'pretext': f":hourglass: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} reviewers assigned*: _(newest first)_",
+                'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
+                'color': '#f2c744',
+            })
 
         # Revisions with 0 reviews
         num_revisions = len(self.revisions_to_review)
@@ -287,6 +320,21 @@ class RevisionStatusReport(PhablyticsReport):
 
     def generate_text_report(self):
         lines = []
+
+        # Revisions missing reviewers
+        num_revisions = len(self.revisions_missing_reviewers)
+        if num_revisions > 0:
+            report = []
+            count = 0
+
+            for revision in sorted(self.revisions_missing_reviewers, key=lambda r: r.modified_ts, reverse=True):
+                count += 1
+                self._format_and_append_revision_to_report(report, revision, count, slack=False)
+
+            icon = emoji.emojize(':hourglass_done:')
+            lines.append(f"{icon}{HTML_ICON_SEPARATOR}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} reviewers assigned**: *(newest first)*")
+            lines.append('')
+            lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))
 
         # Revisions with 0 reviews
         num_revisions = len(self.revisions_to_review)

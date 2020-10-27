@@ -21,6 +21,13 @@ class PhablyticsReport:
         """
         pass
 
+    @property
+    def web_url(self):
+        # Phablytics Imports
+        from phablytics.web.reports.utils import get_report_url
+        url = get_report_url(self.name)
+        return url
+
     def generate_report(self, *args, **kwargs):
         """The main function to generate a report
 

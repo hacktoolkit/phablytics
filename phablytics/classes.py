@@ -151,7 +151,20 @@ class Maniphest(PhabricatorEntity):
 
 
 class Project(PhabricatorEntity):
-    pass
+    @property
+    def attachments(self):
+        attachments = self.raw_data.get('attachments', {})
+        return attachments
+
+    @property
+    def member_phids(self):
+        members = self.attachments.get('members', {}).get('members', [])
+        member_phids = [
+            member['phid']
+            for member
+            in members
+        ]
+        return member_phids
 
 
 class ProjectColumn(PhabricatorEntity):
@@ -239,33 +252,58 @@ class Revision(PhabricatorEntity):
     ##
     # Relational attributes
 
-    @property
-    def acceptor_phids(self):
-        """Get PHIDs of accepting reviewer entities that are users
+    def get_acceptor_phids(self, include_groups=False):
+        """Get PHIDs of accepting reviewer entities
+
+        If `include_groups` is True, only include USER reviewers,
+        else, also includes group (PROJ) reviewers.
         """
         reviewers = self.reviewers
         phids = [
             reviewer['reviewerPHID']
             for reviewer
             in reviewers
-            if reviewer.get('status') == 'accepted' and 'USER' in reviewer['reviewerPHID']
+            if (
+                reviewer.get('status') == 'accepted'
+                and (
+                    include_groups
+                    or 'USER' in reviewer['reviewerPHID']
+                )
+            )
         ]
+        return phids
+
+    @property
+    def acceptor_phids(self):
+        phids = self.get_acceptor_phids(include_groups=False)
+        return phids
+
+    @property
+    def group_acceptor_phids(self):
+        phids = self.get_acceptor_phids(include_groups=True)
         return phids
 
     @property
     def num_acceptors(self):
         return len(self.acceptor_phids)
 
-    @property
-    def blocker_phids(self):
+    def get_blocker_phids(self, include_groups=False):
         """Get PHIDs of blocking reviewer entities
         """
         def _is_blocking(reviewer):
             is_blocking = False
             if reviewer.get('isBlocking'):
                 is_blocking = True
-            elif reviewer['status'] == 'rejected' and 'USER' in reviewer['reviewerPHID']:
+            elif (
+                reviewer['status'] in ['blocking', 'rejected']
+                and (
+                    include_groups
+                    or 'USER' in reviewer['reviewerPHID']
+                )
+            ):
                 is_blocking = True
+            else:
+                pass
 
             return is_blocking
 
@@ -279,8 +317,30 @@ class Revision(PhabricatorEntity):
         return phids
 
     @property
+    def blocker_phids(self):
+        phids = self.get_blocker_phids(include_groups=False)
+        return phids
+
+    @property
+    def group_blocker_phids(self):
+        phids = self.get_blocker_phids(include_groups=True)
+        return phids
+
+    @property
     def num_blockers(self):
         return len(self.blocker_phids)
+
+    def has_reviewer_among_group(self, user_phids):
+        has_reviewer = False
+
+        user_phids_set = set(user_phids)
+
+        for reviewer in self.reviewers:
+            if reviewer['reviewerPHID'] in user_phids_set:
+                has_reviewer = True
+                break
+
+        return has_reviewer
 
     ##
     # Computed attributes

@@ -1,4 +1,5 @@
 # Phablytics Imports
+from phablytics.reports.group_review_status import GroupReviewStatusReport
 from phablytics.reports.new_project_tasks import NewProjectTasksReport
 from phablytics.reports.recent_tasks import RecentTasksReport
 from phablytics.reports.revision_status import RevisionStatusReport

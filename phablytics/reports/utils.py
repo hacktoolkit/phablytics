@@ -14,12 +14,13 @@ from phablytics.settings import (
 
 
 def get_report_names():
-    report_names = list(REPORTS.keys())
+    report_names = [report.name for report in REPORTS]
     return report_names
 
 
 def get_report_config(report_name, overrides=None):
-    report_config_dict = asdict(REPORTS[report_name])
+    cfg = list(filter(lambda cfg: cfg.name == report_name, REPORTS))[0]
+    report_config_dict = asdict(cfg)
 
     if overrides:
         for key in report_config_dict.keys():
@@ -38,6 +39,7 @@ def get_report_types():
     """
     # Phablytics Imports
     from phablytics.reports import (
+        GroupReviewStatusReport,
         NewProjectTasksReport,
         RecentTasksReport,
         RevisionStatusReport,
@@ -46,11 +48,12 @@ def get_report_types():
     )
 
     report_types = {
+        'GroupReviewStatus' : GroupReviewStatusReport,
         'NewProjectTasks': NewProjectTasksReport,
+        'RecentTasks' : RecentTasksReport,
         'RevisionStatus' : RevisionStatusReport,
         'UpcomingProjectTasksDue' : UpcomingProjectTasksDueReport,
         'UrgentAndOverdueProjectTasks' : UrgentAndOverdueProjectTasksReport,
-        'RecentTasks' : RecentTasksReport,
     }
     return report_types
 

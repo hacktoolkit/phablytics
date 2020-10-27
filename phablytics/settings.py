@@ -10,6 +10,7 @@ from dataclasses import (
 ##
 # Various Settings and Configuration Variables
 
+PHABLYTICS_BASE_URL = None
 PHABRICATOR_INSTANCE_BASE_URL = 'configure_me'
 
 ADMIN_USERNAME = 'configure_me'
@@ -27,6 +28,7 @@ REVISION_ACCEPTANCE_THRESHOLD = 2
 
 @dataclass
 class ReportConfig:
+    name: str
     report_type: str
     html: bool = False
     # Slack
@@ -41,6 +43,9 @@ class ReportConfig:
             '-id',  # oldest tasks first
         ]
     )
+    # ReviewStatus
+    reviewers: list = field(default_factory=list)
+    group_reviewers: list = field(default_factory=list)
     # RevisionStatus
     threshold_days: int = 14
     # NewProjectTasks
@@ -59,40 +64,55 @@ class ReportConfig:
 TEAM_USERNAMES = []
 
 
-REPORTS = {
+REPORTS = [
     # These are sample ReportConfigs that should be customized in your local settings.py
-    'RevisionStatus': ReportConfig(
+    ReportConfig(
+        name='GroupReviewStatus',
+        report_type='GroupReviewStatus',
+        reviewers=[
+        ],
+        group_reviewers=[
+            'configure_me',
+        ],
+        threshold_days=30
+    ),
+    ReportConfig(
+        name='RevisionStatus',
         report_type='RevisionStatus',
         query_key='configure_me',
         threshold_days=14
     ),
-    'NewProjectTasks': ReportConfig(
+    ReportConfig(
+        name='NewProjectTasks',
         report_type='NewProjectTasks',
         project_names=[
             'configure_me'
         ]
     ),
-    'UpcomingProjectTasksDue': ReportConfig(
+    ReportConfig(
+        name='UpcomingProjectTasksDue',
         report_type='UpcomingProjectTasksDue',
         project_name=None,
         column_names=[],
         excluded_tasks=[],
         custom_exclusions=[]
     ),
-    'UrgentAndOverdueProjectTasks': ReportConfig(
+    ReportConfig(
+        name='UrgentAndOverdueProjectTasks',
         report_type='UrgentAndOverdueProjectTasks',
         project_name=None,
         column_names=[],
         excluded_tasks=[],
         custom_exclusions=[]
     ),
-    'RecentTasks': ReportConfig(
+    ReportConfig(
+        name='RecentTasks',
         report_type='RecentTasks',
         usernames=TEAM_USERNAMES,
         slack=False,
         slack_channel=None
     ),
-}
+]
 
 
 ##

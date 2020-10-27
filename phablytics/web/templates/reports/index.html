@@ -8,16 +8,16 @@
 </p>
 
 <div class="row row-cols-1 row-cols-md-3">
-  {% for report_name, report in reports.items() %}
+  {% for report in reports %}
   <div class="col mb-4">
     <div class="card">
       {#<img src="..." class="card-img-top" alt="...">#}
       <div class="card-body">
-        <h5 class="card-title">{{ report_name}}</h5>
+        <h5 class="card-title">{{ report.name}}</h5>
         <p class="card-text">
-          {{ report_name }}<br/>
+          {{ report.name }}<br/>
         </p>
-        <a href="/reports/view/{{ report_name }}" class="btn btn-primary">Show Report</a>
+        <a href="/reports/view/{{ report.name }}" class="btn btn-primary">Show Report</a>
       </div>
     </div>
   </div>
