@@ -330,6 +330,31 @@ class Revision(PhabricatorEntity):
     def num_blockers(self):
         return len(self.blocker_phids)
 
+    def has_sufficient_non_group_reviewer_acceptances(self, user_phids, acceptance_threshold):
+        """Determines whether this revision has sufficient acceptances meeting or exceeding `acceptance_threshold`
+
+        Accepting reviewers must be:
+        - actual users, not groups
+        - not a member of the blocking reviewer group (not in `user_phids`)
+        """
+        non_group_acceptances = 0
+
+        user_phids_set = set(user_phids)
+        for reviewer in self.reviewers:
+            reviewer_phid = reviewer['reviewerPHID']
+            if (
+                reviewer_phid not in user_phids_set
+                and 'USER' in reviewer_phid
+
+                and reviewer.get('status') == 'accepted'
+            ):
+                non_group_acceptances += 1
+        else:
+            pass
+
+        has_sufficient_acceptances = non_group_acceptances >= acceptance_threshold
+        return has_sufficient_acceptances
+
     def has_reviewer_among_group(self, user_phids):
         has_reviewer = False
 

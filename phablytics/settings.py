@@ -46,6 +46,7 @@ class ReportConfig:
     # ReviewStatus
     reviewers: list = field(default_factory=list)
     group_reviewers: list = field(default_factory=list)
+    non_group_reviewer_acceptance_threshold: int = 2
     # RevisionStatus
     threshold_days: int = 14
     # NewProjectTasks

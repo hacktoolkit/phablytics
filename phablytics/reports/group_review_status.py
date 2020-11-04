@@ -64,10 +64,21 @@ class GroupReviewStatusReport(PhablyticsReport):
         ]
         reviewer_phids = list(map(lambda x: x.phid, reviewer_users + projects))
 
+        non_group_reviewer_acceptance_threshold = self.non_group_reviewer_acceptance_threshold
+
         date_created = (datetime.datetime.now() - datetime.timedelta(days=self.threshold_days)).replace(hour=0, minute=0, second=0)
         active_revisions = fetch_differential_revisions(
             reviewer_phids=reviewer_phids,
             modified_after_dt=date_created
+        )
+        revisions_ready_for_group_review = list(
+            filter(
+                lambda revision: revision.has_sufficient_non_group_reviewer_acceptances(
+                    group_reviewer_phids,
+                    non_group_reviewer_acceptance_threshold
+                ),
+                active_revisions
+            )
         )
 
         # place revisions into buckets
@@ -77,7 +88,7 @@ class GroupReviewStatusReport(PhablyticsReport):
         revisions_additional_approval = []
         revisions_accepted = []
 
-        for revision in active_revisions:
+        for revision in revisions_ready_for_group_review:
             if not revision.has_reviewer_among_group(group_reviewer_phids):
                 revisions_missing_reviewers.append(revision)
             elif revision.meets_acceptance_criteria:
