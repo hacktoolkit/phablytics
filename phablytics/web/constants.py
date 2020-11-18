@@ -1,5 +1,6 @@
 SITE_NAME = 'Phablytics'
 
+
 NAV_LINKS = [
     {
         'name': 'Home',
@@ -18,3 +19,11 @@ NAV_LINKS = [
         'path': '/help',
     },
 ]
+
+
+BREADCRUMBS = {
+    '/' : 'Home',
+    '/metrics': 'Metrics',
+    '/reports': 'Reports',
+    '/help': 'Help',
+}

@@ -13,7 +13,7 @@
 	<body>
     {% include 'fragments/header.html' %}
     <div id="main" class="container-fluid">
-      {#{% include 'fragments/breadcrumbs.html' %}#}
+      {% include 'fragments/breadcrumbs.html' %}
       {% block content %}{% endblock %}
     </div>
     {% include 'fragments/footer.html' %}

@@ -13,7 +13,7 @@ def get_report_url(report_name):
         #     PHABLYTICS_BASE_URL,
         #     url_for('.show', report_name=report_name)
         # )
-        url = '{}/reports/view/{}'.format(
+        url = '{}/reports/{}'.format(
             PHABLYTICS_BASE_URL,
             report_name
         )

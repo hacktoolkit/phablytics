@@ -33,7 +33,7 @@ def index(page):
     return _r('reports/%s.html' % page, context_data=context_data)
 
 
-@reports_page.route('/reports/view/<report_name>')
+@reports_page.route('/reports/<report_name>')
 def show(report_name):
     report_config = get_report_config(report_name)
     report_config.slack = False
