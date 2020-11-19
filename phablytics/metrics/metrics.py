@@ -10,15 +10,17 @@ from phablytics.constants import (
 )
 from phablytics.metrics.constants import DATE_FORMAT_MDY_SHORT
 from phablytics.utils import (
-    get_bugs_closed_over_period,
-    get_bugs_created_over_period,
+    get_tasks_closed_over_period,
+    get_tasks_created_over_period,
+    pluralize,
 )
 
 
 class MetricMeta(type):
     @property
     def name(cls):
-        name = cls.__name__.replace('Metric', '') + 's'
+        metric_type = cls.__name__.replace('Metric', '')
+        name = pluralize(metric_type)
         return name
 
     @property
@@ -32,11 +34,11 @@ class MetricMeta(type):
         return desc
 
 
-class BugMetric(
-    namedtuple('BugMetric', 'period_name,period_start,period_end,bugs_created,bugs_closed'),
+class TaskMetric(
+    namedtuple('TaskMetric', 'period_name,period_start,period_end,tasks_created,tasks_closed'),
     metaclass=MetricMeta
 ):
-    """Tracks bugs opened vs closed over time.
+    """Tracks tasks opened vs closed over time.
     """
     def as_dict(self):
         data = {
@@ -51,12 +53,12 @@ class BugMetric(
 
     @property
     def num_created(self):
-        num_created = len(self.bugs_created)
+        num_created = len(self.tasks_created)
         return num_created
 
     @property
     def num_closed(self):
-        num_closed = len(self.bugs_closed)
+        num_closed = len(self.tasks_closed)
         return num_closed
 
     @property
@@ -68,8 +70,29 @@ class BugMetric(
         return ratio
 
 
+class BugMetric(TaskMetric):
+    """Tracks bugs opened vs closed over time.
+    """
+    pass
+
+
+class FeatureMetric(TaskMetric):
+    """Tracks features opened vs closed over time.
+    """
+    pass
+
+
+class StoryMetric(TaskMetric):
+    """Tracks stories opened vs closed over time.
+    """
+    pass
+
+
 METRICS = [
     BugMetric,
+    FeatureMetric,
+    StoryMetric,
+    TaskMetric,
 ]
 
 INTERVAL_DAYS_MAP = {
@@ -80,13 +103,16 @@ DEFAULT_INTERVAL_DAYS = INTERVAL_DAYS_MAP['week']
 
 
 class Metrics:
-    def bugs(self, interval, period_start, period_end, *args, **kwargs):
-        """Returns the rate of bugs opened/closed over a period
-        """
-
+    def _retrieve_task_metrics(
+        self,
+        interval,
+        period_start,
+        period_end,
+        task_subtypes
+    ):
         now = datetime.datetime.now()
 
-        bug_metrics = []
+        task_metrics = []
 
         if period_start >= period_end:
             raise Exception('period_start must be before period_end')
@@ -102,18 +128,77 @@ class Metrics:
                 end.strftime(DATE_FORMAT_MDY_SHORT)
             )
 
-            bugs_created = get_bugs_created_over_period(start, end)
-            bugs_closed = get_bugs_closed_over_period(start, end)
+            tasks_created = get_tasks_created_over_period(start, end, subtypes=task_subtypes)
+            tasks_closed = get_tasks_closed_over_period(start, end, subtypes=task_subtypes)
 
-            bug_metric = BugMetric(
+            task_metric = TaskMetric(
                 period_name=period_name,
                 period_start=start,
                 period_end=end,
-                bugs_created=bugs_created,
-                bugs_closed=bugs_closed
+                tasks_created=tasks_created,
+                tasks_closed=tasks_closed
             )
-            bug_metrics.append(bug_metric)
+            task_metrics.append(task_metric)
 
             end = start
 
-        return bug_metrics
+        return task_metrics
+
+    def bugs(self, interval, period_start, period_end, *args, **kwargs):
+        """Returns the rate of bugs opened/closed over a period
+        """
+        task_subtypes = [
+            'bug',
+        ]
+        task_metrics = self._retrieve_task_metrics(
+            interval,
+            period_start,
+            period_end,
+            task_subtypes
+        )
+        return task_metrics
+
+    def features(self, interval, period_start, period_end, *args, **kwargs):
+        """Returns the rate of features opened/closed over a period
+        """
+        task_subtypes = [
+            'feature',
+        ]
+
+        task_metrics = self._retrieve_task_metrics(
+            interval,
+            period_start,
+            period_end,
+            task_subtypes
+        )
+        return task_metrics
+
+    def stories(self, interval, period_start, period_end, *args, **kwargs):
+        """Returns the rate of stories opened/closed over a period
+        """
+        task_subtypes = [
+            'story',
+        ]
+
+        task_metrics = self._retrieve_task_metrics(
+            interval,
+            period_start,
+            period_end,
+            task_subtypes
+        )
+        return task_metrics
+
+    def tasks(self, interval, period_start, period_end, *args, **kwargs):
+        """Returns the rate of tasks opened/closed over a period
+        """
+        task_subtypes = [
+            'default',
+        ]
+
+        task_metrics = self._retrieve_task_metrics(
+            interval,
+            period_start,
+            period_end,
+            task_subtypes
+        )
+        return task_metrics

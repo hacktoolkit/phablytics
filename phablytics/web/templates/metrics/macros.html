@@ -1,0 +1,117 @@
+{% macro tasks(heading, name, name_plural) -%}
+<h1>{{ heading }}</h1>
+
+{% include 'fragments/metrics/filters.html' %}
+
+<canvas id="metrics_chart"></canvas>
+
+<script>
+  var TASK_METRICS = {{ metrics_json|safe }};
+
+  var COLOR_BLUE = 'rgb(12, 23, 177)';
+  var COLOR_GREEN = 'rgb(21, 195, 21)';
+  var COLOR_PINK = 'rgb(255, 99, 132)';
+
+  var ctx = document.getElementById('metrics_chart').getContext('2d');
+  var chart = new Chart(ctx, {
+      // The type of chart we want to create
+      type: 'bar',
+
+      // The data for our dataset
+      data: {
+          labels: _.map(TASK_METRICS, (taskMetric) => {
+              return taskMetric.period_name;
+          }),
+          datasets: [
+              {
+                  label: '{{ name }} Ratio',
+                  backgroundColor: COLOR_BLUE,
+                  borderColor: COLOR_BLUE,
+                  data: _.map(TASK_METRICS, (taskMetric) => taskMetric.ratio),
+                  type: 'line',
+                  fill: false,
+                  lineTension: 0,
+                  yAxisID: 'taskRate',
+                  order: 1
+              },
+              {
+                  label: '{{ name_plural }} Closed',
+                  backgroundColor: COLOR_GREEN,
+                  borderColor: COLOR_GREEN,
+                  data: _.map(TASK_METRICS, (taskMetric) => taskMetric.num_closed),
+                  yAxisID: 'numTasks',
+                  order: 2
+              },
+              {
+                  label: '{{ name_plural }} Created',
+                  backgroundColor: COLOR_PINK,
+                  borderColor: COLOR_PINK,
+                  data: _.map(TASK_METRICS, (taskMetric) => taskMetric.num_created),
+                  yAxisID: 'numTasks',
+                  order: 3
+              }
+          ]
+      },
+
+      // Configuration options go here
+      options: {
+          scales: {
+              yAxes: [
+                  {
+                      id: 'numTasks',
+                      type: 'linear',
+                      position: 'left'
+                  },
+                  {
+                      id: 'taskRate',
+                      type: 'linear',
+                      position: 'right'
+                  }
+              ]
+          }
+      }
+  });
+</script>
+
+<br/>
+<br/>
+
+<div class="accordion" id="tasks-accordion">
+  {% for task_metric in metrics %}
+  <div class="card">
+    <div class="card-header" id="heading-{{ loop.index }}">
+      <h2 class="mb-0">
+        <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse" data-target="#collapse-{{ loop.index }}">
+          <b>{{ task_metric.period_name }}</b>:
+          <i>
+            {{ task_metric.num_closed }} closed vs {{ task_metric.num_created }} created
+            (Ratio: <span style="color: {% if task_metric.ratio > 1 %}green{% else %}red{% endif %};">{{ task_metric.ratio }}</span>)
+          </i>
+        </button>
+      </h2>
+    </div>
+    <div id="collapse-{{ loop.index }}" class="collapse" aria-labelledby="heading-{{ loop.index }}" data-parent="#tasks-accordion">
+      <div class="card-body">
+        <p>
+          <b>{{ name_plural }} Closed</b>
+        </p>
+        <ul>
+          {% for task in task_metric.tasks_closed %}
+          <li>{{ task.html|safe }}</li>
+          {% endfor %}
+        </ul>
+
+        <p>
+          <b>{{ name_plural }} Created</b>
+        </p>
+        <ul>
+          {% for task in task_metric.tasks_created %}
+          <li>{{ task.html|safe }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{%- endmacro %}

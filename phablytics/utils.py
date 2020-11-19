@@ -9,8 +9,8 @@ import os
 # Third Party (PyPI) Imports
 from phabricator import Phabricator
 
-# Local Imports
-from .classes import (
+# Phablytics Imports
+from phablytics.classes import (
     Maniphest,
     PhabricatorEntity,
     Project,
@@ -19,6 +19,7 @@ from .classes import (
     Revision,
     User,
 )
+from phablytics.constants import MANIPHEST_SUBTYPES
 
 
 ##
@@ -199,13 +200,15 @@ def get_maniphest_tasks_by_project_name(project_name, column_phids=None, order=N
     return tasks
 
 
-def get_bugs_created_over_period(period_start, period_end):
-    """Returns a list of bugs created over a period
-    """
+def get_tasks_created_over_period(
+    period_start,
+    period_end,
+    subtypes=None
+):
+    subtypes = subtypes or MANIPHEST_SUBTYPES
+
     constraints = {
-        'subtypes': [
-            'bug',
-        ],
+        'subtypes': subtypes,
         'createdStart': int(period_start.timestamp()),
         'createdEnd': int(period_end.timestamp()),
     }
@@ -215,13 +218,15 @@ def get_bugs_created_over_period(period_start, period_end):
     return tasks
 
 
-def get_bugs_closed_over_period(period_start, period_end):
-    """Returns a list of bugs created over a period
-    """
+def get_tasks_closed_over_period(
+    period_start,
+    period_end,
+    subtypes=None
+):
+    subtypes = subtypes or MANIPHEST_SUBTYPES
+
     constraints = {
-        'subtypes': [
-            'bug',
-        ],
+        'subtypes': subtypes,
         'closedStart': int(period_start.timestamp()),
         'closedEnd': int(period_end.timestamp()),
     }
@@ -346,3 +351,15 @@ def whoami():
     results = PHAB.user.whoami()
     user = User(results.response)
     return user
+
+
+##
+# Misc
+
+
+def pluralize(s):
+    if s[-1] == 'y':
+        pluralized = s[:-1] + 'ies'
+    else:
+        pluralized = s + 's'
+    return pluralized

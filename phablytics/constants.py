@@ -17,3 +17,10 @@ MANIPHEST_STATUSES_CLOSED = [
     'resolved',
     'wontfix',
 ]
+
+MANIPHEST_SUBTYPES = [
+    'bug',
+    'default',
+    'feature',
+    'story',
+]
