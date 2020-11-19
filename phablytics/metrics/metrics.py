@@ -8,6 +8,7 @@ from phablytics.constants import (
     MANIPHEST_STATUSES_CLOSED,
     MANIPHEST_STATUSES_OPEN,
 )
+from phablytics.metrics.constants import DATE_FORMAT_MDY_SHORT
 from phablytics.utils import (
     get_bugs_closed_over_period,
     get_bugs_created_over_period,
@@ -60,7 +61,10 @@ class BugMetric(
 
     @property
     def ratio(self):
-        ratio = self.num_closed / self.num_created
+        try:
+            ratio = self.num_closed / self.num_created
+        except ZeroDivisionError:
+            ratio = 1
         return ratio
 
 
@@ -68,31 +72,48 @@ METRICS = [
     BugMetric,
 ]
 
+INTERVAL_DAYS_MAP = {
+    'week': 7,
+    'month': 30,
+}
+DEFAULT_INTERVAL_DAYS = INTERVAL_DAYS_MAP['week']
+
 
 class Metrics:
-    def bugs(self, trailing_months=12):
-        """Returns the rate of bugs opened/closed over the past N `trailing_months`
+    def bugs(self, interval, period_start, period_end, *args, **kwargs):
+        """Returns the rate of bugs opened/closed over a period
         """
 
         now = datetime.datetime.now()
 
         bug_metrics = []
 
-        for i in range(trailing_months):
-            period_name = f'{i * 30} to {(i + 1) * 30} days ago'
-            period_end = now - datetime.timedelta(days=i * 30)
-            period_start = period_end - datetime.timedelta(days=30)
+        if period_start >= period_end:
+            raise Exception('period_start must be before period_end')
 
-            bugs_created = get_bugs_created_over_period(period_start, period_end)
-            bugs_closed = get_bugs_closed_over_period(period_start, period_end)
+        interval_days = INTERVAL_DAYS_MAP.get(interval, DEFAULT_INTERVAL_DAYS)
+
+        end = period_end
+
+        while end > period_start:
+            start = end - datetime.timedelta(days=interval_days)
+            period_name = '{} to {}'.format(
+                start.strftime(DATE_FORMAT_MDY_SHORT),
+                end.strftime(DATE_FORMAT_MDY_SHORT)
+            )
+
+            bugs_created = get_bugs_created_over_period(start, end)
+            bugs_closed = get_bugs_closed_over_period(start, end)
 
             bug_metric = BugMetric(
                 period_name=period_name,
-                period_start=period_start,
-                period_end=period_end,
+                period_start=start,
+                period_end=end,
                 bugs_created=bugs_created,
                 bugs_closed=bugs_closed
             )
             bug_metrics.append(bug_metric)
+
+            end = start
 
         return bug_metrics

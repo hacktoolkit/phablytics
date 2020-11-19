@@ -98,3 +98,8 @@ def get_breadcrumbs():
         breadcrumbs.append(breadcrumb)
 
     return breadcrumbs
+
+
+def format_choices(options):
+    choices = [(option, option, ) for option in options]
+    return choices

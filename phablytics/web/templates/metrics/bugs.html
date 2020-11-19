@@ -3,6 +3,8 @@
 {% block content %}
 <h1>Bugs</h1>
 
+{% include 'fragments/metrics/filters.html' %}
+
 <canvas id="metrics_chart"></canvas>
 
 <script>
@@ -43,7 +45,7 @@
                   order: 2
               },
               {
-                  label: 'Bug Created',
+                  label: 'Bugs Created',
                   backgroundColor: COLOR_PINK,
                   borderColor: COLOR_PINK,
                   data: _.map(BUG_METRICS, (bugMetric) => bugMetric.num_created),

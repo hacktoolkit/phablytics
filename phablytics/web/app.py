@@ -1,6 +1,7 @@
 # Python Standard Library Imports
 import copy
 import os
+import uuid
 
 # Third Party (PyPI) Imports
 from flask import Flask
@@ -39,6 +40,8 @@ application = Flask(
     static_folder=STATIC_DIR,
     template_folder=TEMPLATES_DIR
 )
+
+application.secret_key = os.environ.get('FLASK_SECRET_KEY', uuid.uuid4().hex)
 application.url_map.converters['regex'] = RegexConverter
 
 

@@ -1,0 +1,37 @@
+<button class="btn btn-secondary"
+        type="button"
+        data-toggle="collapse"
+        data-target="#metrics_filter"
+        aria-expanded="false"
+        aria-controls="metrics_filter"
+        >
+  Filter
+</button>
+
+<div id="metrics_filter" class="collapse border border-secondary rounded mt-3 p-3">
+  <form method="GET">
+    {% for field in filter_form %}
+    {% if field.name != 'csrf_token' %}
+    <div class="form-group">
+      <label for="{{ field.name }}">{{ field.label }}</label>
+      {% if field.name in ('period_start', 'period_end', ) %}
+      {{ field(class_="form-control datepicker") }}
+      {% else %}
+      {{ field(class_="form-control") }}
+      {% endif %}
+      {% if field.description %}
+      {{ field.description }}
+      {% endif %}
+      {% if field.errors %}
+      <ul>
+        {% for error in field.errors %}
+        <li class="text-danger">{{ error }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Update</button>
+  </form>
+</div>

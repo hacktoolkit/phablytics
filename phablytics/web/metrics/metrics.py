@@ -9,6 +9,10 @@ from phablytics.metrics.metrics import (
     METRICS,
     Metrics,
 )
+from phablytics.web.metrics.forms import (
+    MetricsFilterForm,
+    get_filter_params,
+)
 from phablytics.web.utils import custom_render_template as _r
 
 
@@ -30,7 +34,11 @@ def index(page):
 
 @metrics_page.route('/metrics/<page>')
 def show_metric(page):
-    metrics = getattr(Metrics(), page)()
+    filter_params = get_filter_params()
+    filter_form = MetricsFilterForm(**filter_params)
+
+    metrics = getattr(Metrics(), page)(**filter_params)
+
     metrics_json = [
         metric.as_dict()
         for metric
@@ -40,6 +48,7 @@ def show_metric(page):
     context_data = {
         'metrics': metrics,
         'metrics_json': json.dumps(metrics_json),
+        'filter_form': filter_form,
     }
 
     return _r('metrics/%s.html' % page, context_data=context_data)
