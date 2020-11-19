@@ -20,10 +20,12 @@ NAV_LINKS = [
     },
 ]
 
-
+# Breadcrumbs are automatically inflected based on the final phrase of a URL path.
+# Overrides can be set based on paths in the BREADCRUMBS dict.
 BREADCRUMBS = {
     '/' : 'Home',
     '/metrics': 'Metrics',
+    '/metrics/alltasks': 'All Tasks',
     '/reports': 'Reports',
     '/help': 'Help',
 }
