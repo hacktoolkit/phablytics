@@ -41,7 +41,7 @@ def show_metric(page):
 
     context_data = {
         'metrics': stats.metrics,
-        'stats': stats,
+        'stats': stats.stats,
         'metrics_json': json.dumps(stats.metrics_json),
         'filter_form': filter_form,
     }

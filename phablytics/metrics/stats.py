@@ -5,6 +5,7 @@ import numpy
 class TaskMetricsStats:
     def __init__(self, metrics):
         self.metrics = metrics
+        self.stats = {}
 
         self._compute_stats()
 
@@ -19,11 +20,11 @@ class TaskMetricsStats:
 
     def _compute_stats(self):
         attributes = [
-            'num_created',
-            'num_closed',
-            'points_added',
-            'points_completed',
-            'ratio',
+            ('points_completed', 'Story Points Completed', ),
+            ('points_added', 'Story Points Added', ),
+            ('num_closed', 'Tasks Closed', ),
+            ('num_created', 'Tasks Created', ),
+            ('ratio', 'Task Open vs Closed Ratio', ),
         ]
 
         stat_fns = [
@@ -33,10 +34,15 @@ class TaskMetricsStats:
             'median',
         ]
 
-        for attr in attributes:
+        for attr, name in attributes:
+            attr_stats = {
+                'name': name,
+            }
+
             values = [getattr(metric, attr) for metric in self.metrics]
 
             for stat_fn in stat_fns:
                 value = getattr(numpy, stat_fn)(values)
-                stat_name = '{}_{}'.format(attr, stat_fn)
-                setattr(self, stat_name, value)
+                attr_stats[stat_fn] =  value
+
+            self.stats[attr] = attr_stats
