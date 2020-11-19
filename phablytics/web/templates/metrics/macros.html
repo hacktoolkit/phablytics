@@ -24,22 +24,8 @@
               return taskMetric.period_name;
           }),
           datasets: [
-              {
-                  label: '{{ name_plural }} Closed',
-                  backgroundColor: COLOR_GREEN,
-                  borderColor: COLOR_GREEN,
-                  data: _.map(TASK_METRICS, (taskMetric) => taskMetric.num_closed),
-                  yAxisID: 'numTasks',
-                  order: 2
-              },
-              {
-                  label: '{{ name_plural }} Created',
-                  backgroundColor: COLOR_PINK,
-                  borderColor: COLOR_PINK,
-                  data: _.map(TASK_METRICS, (taskMetric) => taskMetric.num_created),
-                  yAxisID: 'numTasks',
-                  order: 3
-              },
+              // line graphs
+              // keep in front so they don't get obscured by bar graphs
               {
                   label: '{{ name }} Ratio',
                   backgroundColor: COLOR_BLUE,
@@ -61,6 +47,23 @@
                   lineTension: 0,
                   yAxisID: 'pointsCompleted',
                   order: 1
+              },
+              // bar graphs
+              {
+                  label: '{{ name_plural }} Closed',
+                  backgroundColor: COLOR_GREEN,
+                  borderColor: COLOR_GREEN,
+                  data: _.map(TASK_METRICS, (taskMetric) => taskMetric.num_closed),
+                  yAxisID: 'numTasks',
+                  order: 2
+              },
+              {
+                  label: '{{ name_plural }} Created',
+                  backgroundColor: COLOR_PINK,
+                  borderColor: COLOR_PINK,
+                  data: _.map(TASK_METRICS, (taskMetric) => taskMetric.num_created),
+                  yAxisID: 'numTasks',
+                  order: 3
               }
           ]
       },
