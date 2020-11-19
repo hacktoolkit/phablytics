@@ -37,17 +37,12 @@ def show_metric(page):
     filter_params = get_filter_params()
     filter_form = MetricsFilterForm(**filter_params)
 
-    metrics = getattr(Metrics(), page)(**filter_params)
-
-    metrics_json = [
-        metric.as_dict()
-        for metric
-        in reversed(metrics)
-    ]
+    stats = getattr(Metrics(), page)(**filter_params)
 
     context_data = {
-        'metrics': metrics,
-        'metrics_json': json.dumps(metrics_json),
+        'metrics': stats.metrics,
+        'stats': stats,
+        'metrics_json': json.dumps(stats.metrics_json),
         'filter_form': filter_form,
     }
 

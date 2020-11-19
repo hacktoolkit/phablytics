@@ -9,6 +9,7 @@ from phablytics.constants import (
     MANIPHEST_STATUSES_OPEN,
 )
 from phablytics.metrics.constants import DATE_FORMAT_MDY_SHORT
+from phablytics.metrics.stats import TaskMetricsStats
 from phablytics.utils import (
     get_project_by_name,
     get_tasks_closed_over_period,
@@ -183,7 +184,9 @@ class Metrics:
 
             end = start
 
-        return task_metrics
+        stats = TaskMetricsStats(task_metrics)
+
+        return stats
 
     def alltasks(self, interval, period_start, period_end, *args, **kwargs):
         """Returns the rate of tasks opened/closed over a period
@@ -194,7 +197,7 @@ class Metrics:
             'feature',
             'story',
         ]
-        task_metrics = self._retrieve_task_metrics(
+        stats = self._retrieve_task_metrics(
             interval,
             period_start,
             period_end,
@@ -202,7 +205,7 @@ class Metrics:
             *args,
             **kwargs
         )
-        return task_metrics
+        return stats
 
     def bugs(self, interval, period_start, period_end, *args, **kwargs):
         """Returns the rate of bugs opened/closed over a period
@@ -210,7 +213,7 @@ class Metrics:
         task_subtypes = [
             'bug',
         ]
-        task_metrics = self._retrieve_task_metrics(
+        stats = self._retrieve_task_metrics(
             interval,
             period_start,
             period_end,
@@ -218,7 +221,7 @@ class Metrics:
             *args,
             **kwargs
         )
-        return task_metrics
+        return stats
 
     def features(self, interval, period_start, period_end, *args, **kwargs):
         """Returns the rate of features opened/closed over a period
@@ -227,7 +230,7 @@ class Metrics:
             'feature',
         ]
 
-        task_metrics = self._retrieve_task_metrics(
+        stats = self._retrieve_task_metrics(
             interval,
             period_start,
             period_end,
@@ -235,7 +238,7 @@ class Metrics:
             *args,
             **kwargs
         )
-        return task_metrics
+        return stats
 
     def stories(self, interval, period_start, period_end, *args, **kwargs):
         """Returns the rate of stories opened/closed over a period
@@ -244,7 +247,7 @@ class Metrics:
             'story',
         ]
 
-        task_metrics = self._retrieve_task_metrics(
+        stats = self._retrieve_task_metrics(
             interval,
             period_start,
             period_end,
@@ -252,7 +255,7 @@ class Metrics:
             *args,
             **kwargs
         )
-        return task_metrics
+        return stats
 
     def tasks(self, interval, period_start, period_end, *args, **kwargs):
         """Returns the rate of tasks opened/closed over a period
@@ -261,7 +264,7 @@ class Metrics:
             'default',
         ]
 
-        task_metrics = self._retrieve_task_metrics(
+        stats = self._retrieve_task_metrics(
             interval,
             period_start,
             period_end,
@@ -269,4 +272,4 @@ class Metrics:
             *args,
             **kwargs
         )
-        return task_metrics
+        return stats
