@@ -100,6 +100,7 @@ def get_breadcrumbs():
     return breadcrumbs
 
 
-def format_choices(options):
-    choices = [(option, option, ) for option in options]
+def format_choices(options, include_blank=False):
+    choices = [('', '', )] if include_blank else []
+    choices.extend([(option, option, ) for option in options])
     return choices

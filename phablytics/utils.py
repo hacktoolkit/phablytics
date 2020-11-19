@@ -203,7 +203,8 @@ def get_maniphest_tasks_by_project_name(project_name, column_phids=None, order=N
 def get_tasks_created_over_period(
     period_start,
     period_end,
-    subtypes=None
+    subtypes=None,
+    author_phids=None
 ):
     subtypes = subtypes or MANIPHEST_SUBTYPES
 
@@ -213,6 +214,9 @@ def get_tasks_created_over_period(
         'createdEnd': int(period_end.timestamp()),
     }
 
+    if author_phids:
+        constraints['authorPHIDs'] = author_phids
+
     tasks = get_maniphest_tasks(constraints)
 
     return tasks
@@ -221,7 +225,8 @@ def get_tasks_created_over_period(
 def get_tasks_closed_over_period(
     period_start,
     period_end,
-    subtypes=None
+    subtypes=None,
+    closer_phids=None
 ):
     subtypes = subtypes or MANIPHEST_SUBTYPES
 
@@ -230,6 +235,9 @@ def get_tasks_closed_over_period(
         'closedStart': int(period_start.timestamp()),
         'closedEnd': int(period_end.timestamp()),
     }
+
+    if closer_phids:
+        constraints['closerPHIDs'] = closer_phids
 
     tasks = get_maniphest_tasks(constraints)
 

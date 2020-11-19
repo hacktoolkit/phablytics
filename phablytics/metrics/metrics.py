@@ -10,6 +10,7 @@ from phablytics.constants import (
 )
 from phablytics.metrics.constants import DATE_FORMAT_MDY_SHORT
 from phablytics.utils import (
+    get_project_by_name,
     get_tasks_closed_over_period,
     get_tasks_created_over_period,
     pluralize,
@@ -127,7 +128,10 @@ class Metrics:
         interval,
         period_start,
         period_end,
-        task_subtypes
+        task_subtypes,
+        team=None,
+        *args,
+        **kwargs
     ):
         now = datetime.datetime.now()
 
@@ -138,6 +142,13 @@ class Metrics:
 
         interval_days = INTERVAL_DAYS_MAP.get(interval, DEFAULT_INTERVAL_DAYS)
 
+        if team:
+            project = get_project_by_name(team, include_members=True)
+            team_member_phids = project.member_phids
+        else:
+            team_member_phids = None
+
+
         end = period_end
 
         while end > period_start:
@@ -147,8 +158,19 @@ class Metrics:
                 end.strftime(DATE_FORMAT_MDY_SHORT)
             )
 
-            tasks_created = get_tasks_created_over_period(start, end, subtypes=task_subtypes)
-            tasks_closed = get_tasks_closed_over_period(start, end, subtypes=task_subtypes)
+            tasks_created = get_tasks_created_over_period(
+                start,
+                end,
+                subtypes=task_subtypes,
+                author_phids=team_member_phids
+
+            )
+            tasks_closed = get_tasks_closed_over_period(
+                start,
+                end,
+                subtypes=task_subtypes,
+                closer_phids=team_member_phids
+            )
 
             task_metric = TaskMetric(
                 period_name=period_name,
@@ -176,7 +198,9 @@ class Metrics:
             interval,
             period_start,
             period_end,
-            task_subtypes
+            task_subtypes,
+            *args,
+            **kwargs
         )
         return task_metrics
 
@@ -190,7 +214,9 @@ class Metrics:
             interval,
             period_start,
             period_end,
-            task_subtypes
+            task_subtypes,
+            *args,
+            **kwargs
         )
         return task_metrics
 
@@ -205,7 +231,9 @@ class Metrics:
             interval,
             period_start,
             period_end,
-            task_subtypes
+            task_subtypes,
+            *args,
+            **kwargs
         )
         return task_metrics
 
@@ -220,7 +248,9 @@ class Metrics:
             interval,
             period_start,
             period_end,
-            task_subtypes
+            task_subtypes,
+            *args,
+            **kwargs
         )
         return task_metrics
 
@@ -235,6 +265,8 @@ class Metrics:
             interval,
             period_start,
             period_end,
-            task_subtypes
+            task_subtypes,
+            *args,
+            **kwargs
         )
         return task_metrics

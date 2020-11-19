@@ -64,6 +64,8 @@ class ReportConfig:
 
 TEAM_USERNAMES = []
 
+PROJECT_TEAM_NAMES = []
+
 
 REPORTS = [
     # These are sample ReportConfigs that should be customized in your local settings.py
