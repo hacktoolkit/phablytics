@@ -8,6 +8,7 @@
 <script>
   var TASK_METRICS = {{ metrics_json|safe }};
 
+  var COLOR_RED = 'rgb(255, 0, 0)';
   var COLOR_BLUE = 'rgb(12, 23, 177)';
   var COLOR_GREEN = 'rgb(21, 195, 21)';
   var COLOR_PINK = 'rgb(255, 99, 132)';
@@ -24,17 +25,6 @@
           }),
           datasets: [
               {
-                  label: '{{ name }} Ratio',
-                  backgroundColor: COLOR_BLUE,
-                  borderColor: COLOR_BLUE,
-                  data: _.map(TASK_METRICS, (taskMetric) => taskMetric.ratio),
-                  type: 'line',
-                  fill: false,
-                  lineTension: 0,
-                  yAxisID: 'taskRate',
-                  order: 1
-              },
-              {
                   label: '{{ name_plural }} Closed',
                   backgroundColor: COLOR_GREEN,
                   borderColor: COLOR_GREEN,
@@ -49,6 +39,28 @@
                   data: _.map(TASK_METRICS, (taskMetric) => taskMetric.num_created),
                   yAxisID: 'numTasks',
                   order: 3
+              },
+              {
+                  label: '{{ name }} Ratio',
+                  backgroundColor: COLOR_BLUE,
+                  borderColor: COLOR_BLUE,
+                  data: _.map(TASK_METRICS, (taskMetric) => taskMetric.ratio),
+                  type: 'line',
+                  fill: false,
+                  lineTension: 0,
+                  yAxisID: 'taskRate',
+                  order: 1
+              },
+              {
+                  label: 'Story Points Completed',
+                  backgroundColor: COLOR_RED,
+                  borderColor: COLOR_RED,
+                  data: _.map(TASK_METRICS, (taskMetric) => taskMetric.points_completed),
+                  type: 'line',
+                  fill: false,
+                  lineTension: 0,
+                  yAxisID: 'pointsCompleted',
+                  order: 1
               }
           ]
       },
@@ -64,6 +76,11 @@
                   },
                   {
                       id: 'taskRate',
+                      type: 'linear',
+                      position: 'right'
+                  },
+                  {
+                      id: 'pointsCompleted',
                       type: 'linear',
                       position: 'right'
                   }

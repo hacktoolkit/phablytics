@@ -47,6 +47,8 @@ class TaskMetric(
             'period_end': int(self.period_end.timestamp()),
             'num_created': self.num_created,
             'num_closed': self.num_closed,
+            'points_added': self.points_added,
+            'points_completed': self.points_completed,
             'ratio': self.ratio,
         }
         return data
