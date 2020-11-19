@@ -146,7 +146,7 @@ class Maniphest(PhabricatorEntity):
 
     @property
     def points(self):
-        points = self.fields['points'] or 0
+        points = int(self.fields['points'] or 0)
         return points
 
 

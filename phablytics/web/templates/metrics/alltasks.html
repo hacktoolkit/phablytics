@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% import 'metrics/macros.html' as macros with context %}
+{{ macros.tasks('All Tasks', 'Task', 'Tasks') }}
+{% endblock %}

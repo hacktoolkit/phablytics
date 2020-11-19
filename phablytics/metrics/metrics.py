@@ -62,12 +62,28 @@ class TaskMetric(
         return num_closed
 
     @property
+    def points_added(self):
+        points = sum([task.points for task in self.tasks_created])
+        return points
+
+    @property
+    def points_completed(self):
+        points = sum([task.points for task in self.tasks_closed])
+        return points
+
+    @property
     def ratio(self):
         try:
             ratio = self.num_closed / self.num_created
         except ZeroDivisionError:
             ratio = 1
         return ratio
+
+
+class AllTasksMetric(TaskMetric):
+    """Tracks all tasks (any subtype) opened vs closed over time.
+    """
+    pass
 
 
 class BugMetric(TaskMetric):
@@ -89,6 +105,7 @@ class StoryMetric(TaskMetric):
 
 
 METRICS = [
+    AllTasksMetric,
     BugMetric,
     FeatureMetric,
     StoryMetric,
@@ -142,6 +159,23 @@ class Metrics:
 
             end = start
 
+        return task_metrics
+
+    def alltasks(self, interval, period_start, period_end, *args, **kwargs):
+        """Returns the rate of tasks opened/closed over a period
+        """
+        task_subtypes = [
+            'bug',
+            'default',
+            'feature',
+            'story',
+        ]
+        task_metrics = self._retrieve_task_metrics(
+            interval,
+            period_start,
+            period_end,
+            task_subtypes
+        )
         return task_metrics
 
     def bugs(self, interval, period_start, period_end, *args, **kwargs):

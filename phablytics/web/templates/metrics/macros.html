@@ -93,7 +93,7 @@
     <div id="collapse-{{ loop.index }}" class="collapse" aria-labelledby="heading-{{ loop.index }}" data-parent="#tasks-accordion">
       <div class="card-body">
         <p>
-          <b>{{ name_plural }} Closed</b>
+          <b>{{ task_metric.num_closed }} {{ name_plural }} Closed</b> (<i>{{ task_metric.points_completed }} pts</i>)
         </p>
         <ul>
           {% for task in task_metric.tasks_closed %}
@@ -102,7 +102,7 @@
         </ul>
 
         <p>
-          <b>{{ name_plural }} Created</b>
+          <b>{{ task_metric.num_created }} {{ name_plural }} Created</b> (<i>{{ task_metric.points_added }} pts</i>)
         </p>
         <ul>
           {% for task in task_metric.tasks_created %}
