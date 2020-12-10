@@ -43,6 +43,8 @@ def show_metric(page):
         'metrics': stats.metrics,
         'stats': stats.stats,
         'metrics_json': json.dumps(stats.metrics_json),
+        'aggregated_stats': stats.aggregated_stats,
+        'filter_params': filter_params,
         'filter_form': filter_form,
     }
 

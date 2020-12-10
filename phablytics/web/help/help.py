@@ -1,4 +1,3 @@
-
 # Third Party (PyPI) Imports
 from flask import Blueprint
 

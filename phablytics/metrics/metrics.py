@@ -3,6 +3,9 @@ import datetime
 import pprint
 from collections import namedtuple
 
+# Third Party (PyPI) Imports
+import numpy
+
 # Phablytics Imports
 from phablytics.constants import (
     MANIPHEST_STATUSES_CLOSED,
@@ -11,6 +14,8 @@ from phablytics.constants import (
 from phablytics.metrics.constants import DATE_FORMAT_MDY_SHORT
 from phablytics.metrics.stats import TaskMetricsStats
 from phablytics.utils import (
+    get_bulk_projects_by_name,
+    get_customer_project,
     get_project_by_name,
     get_tasks_closed_over_period,
     get_tasks_created_over_period,
@@ -52,8 +57,12 @@ class TaskMetric(
             'points_added': self.points_added,
             'points_completed': self.points_completed,
             'ratio': self.ratio,
+            'mean_days_to_resolution': self.mean_days_to_resolution,
         }
         return data
+
+    ##
+    # Raw Metrics
 
     @property
     def num_created(self):
@@ -75,6 +84,9 @@ class TaskMetric(
         points = sum([task.points for task in self.tasks_closed])
         return points
 
+    ##
+    # Ratio Metrics
+
     @property
     def ratio(self):
         try:
@@ -82,6 +94,36 @@ class TaskMetric(
         except ZeroDivisionError:
             ratio = 1
         return ratio
+
+    @property
+    def num_created_per_total(self):
+        rate = 1.0 * self.num_created / max(self.num_closed + self.num_created, 1)
+        return rate
+
+    @property
+    def mean_days_to_resolution(self):
+        values = [task.days_to_resolution for task in self.tasks_closed]
+        mean_days = numpy.mean(values) if values else 0
+        return mean_days
+
+    ##
+    # Normalized Metrics
+
+    @property
+    def days_to_resolution_per_point(self):
+        days = sum([task.days_to_resolution for task in self.tasks_closed])
+        days_per_story_point = 1.0 * days / max(self.points_completed, 1)
+        return days_per_story_point
+
+    @property
+    def points_per_task(self):
+        points_per_task = 1.0 * self.points_completed / max(self.num_closed, 1)
+        return points_per_task
+
+    @property
+    def tasks_per_point(self):
+        tasks_per_point = 1.0 * self.num_closed / max(self.points_completed, 1)
+        return tasks_per_point
 
 
 class AllTasksMetric(TaskMetric):
@@ -119,6 +161,7 @@ METRICS = [
 INTERVAL_DAYS_MAP = {
     'week': 7,
     'month': 30,
+    'quarter': 90,
 }
 DEFAULT_INTERVAL_DAYS = INTERVAL_DAYS_MAP['week']
 
@@ -131,6 +174,8 @@ class Metrics:
         period_end,
         task_subtypes,
         team=None,
+        customer=None,
+        projects=None,
         *args,
         **kwargs
     ):
@@ -149,9 +194,23 @@ class Metrics:
         else:
             team_member_phids = None
 
+        project_phids = []
+
+        if customer:
+            customer_project = get_customer_project(customer)
+            if customer_project:
+                project_phids.append(customer_project.phid)
+        else:
+            pass
+
+        if projects:
+            project_names = projects.split(',')
+            projects = get_bulk_projects_by_name(project_names)
+            project_phids.extend([project.phid for project in projects])
 
         end = period_end
 
+        # TODO: implement make_intervals(period_start, period_end, interval)
         while end > period_start:
             start = end - datetime.timedelta(days=interval_days)
             period_name = '{} to {}'.format(
@@ -163,14 +222,15 @@ class Metrics:
                 start,
                 end,
                 subtypes=task_subtypes,
-                author_phids=team_member_phids
-
+                author_phids=team_member_phids,
+                project_phids=project_phids
             )
             tasks_closed = get_tasks_closed_over_period(
                 start,
                 end,
                 subtypes=task_subtypes,
-                closer_phids=team_member_phids
+                closer_phids=team_member_phids,
+                project_phids=project_phids
             )
 
             task_metric = TaskMetric(

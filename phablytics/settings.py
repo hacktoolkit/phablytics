@@ -61,11 +61,17 @@ class ReportConfig:
     # RecentTasks, RevisionStatus
     usernames: list = field(default_factory=list)
 
+CUSTOMERS = {
+    'id': None,
+    'name': 'Customers',
+    'formatter': lambda name: re.sub(r'^Customer: ', '', name)
+}
 
 TEAM_USERNAMES = []
 
 PROJECT_TEAM_NAMES = []
 
+CUSTOM_SEGMENTS = []
 
 REPORTS = [
     # These are sample ReportConfigs that should be customized in your local settings.py

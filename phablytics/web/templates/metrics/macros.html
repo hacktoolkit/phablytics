@@ -2,8 +2,90 @@
 <h1>{{ heading }}</h1>
 
 {% include 'fragments/metrics/filters.html' %}
+{% if filter_params %}
+<i>
+  <b>Applied filters</b>:
+  {% for key, value in filter_params.items() %}
+  {% if value %}
+  <b>{{ key }}</b>: {{ value }}{% if not loop.last %}; {% endif %}
+  {% endif %}
+  {% endfor %}
+</i>
+<br/>
+{% endif %}
 
-<canvas id="metrics_chart"></canvas>
+<div class="mt-3"></div>
+
+<h3>Aggregated Data Visualization</h3>
+
+<div class="mt-3"></div>
+
+<h3>Aggregated Metrics</h3>
+
+<div class="row">
+  {% for attr in ['points_completed', 'points_added', 'num_closed', 'num_created', 'mean_days_to_resolution', 'days_to_resolution_per_point', 'points_per_task', 'tasks_per_point', ] %}
+  <div class="col-sm-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">{{ aggregated_stats.stats[attr].name }}</h5>
+        <p class="card-text">
+          {{ "%.2f" | format(aggregated_stats.stats[attr].count) }}<br/>
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% for segment in aggregated_stats.segments %}
+<div class="mt-3"></div>
+
+<h3>Aggregated Metrics by Segment: {{ segment.name }}</h3>
+
+{# TODO: Too much noise to present in cards. Archive or throw away code
+<div class="row">
+  {% for metric in segment.metrics %}
+  <div class="col-sm-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">{{ metric.period_name }}</h5>
+        <p class="card-text">
+          <b>Points added</b>: {{ metric.points_added }}<br/>
+          <b>Points completed</b>: {{ metric.points_completed }}<br/>
+          <b>Tasks created</b>: {{ metric.num_created }}<br/>
+          <b>Tasks completed</b>: {{ metric.num_closed }}<br/>
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+#}
+
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-10 col-xl-9 col-xxl-8">
+    <canvas id="chart_{{ segment.key }}"></canvas>
+  </div>
+</div>
+
+<script>
+  var ctx = document.getElementById('chart_{{ segment.key }}').getContext('2d');
+  var config = {{ segment.chart_config_json|safe }};
+
+  var chart = new Chart(ctx, config);
+</script>
+
+{% endfor %}
+
+<div class="mt-3"></div>
+
+<h3>Time Series Data Visualization (per {{ filter_params.interval }})</h3>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-10 col-xl-9 col-xxl-8">
+    <canvas id="metrics_chart"></canvas>
+  </div>
+</div>
 
 <script>
   var TASK_METRICS = {{ metrics_json|safe }};
@@ -95,19 +177,19 @@
 
 <div class="mt-3"></div>
 
-<h3>Statistical Analysis</h3>
+<h3>Statistical Analysis (per {{ filter_params.interval }})</h3>
 
 <div class="row">
-  {% for attr in ['points_completed', 'points_added', 'num_closed', 'num_created', ] %}
+  {% for attr in ['points_completed', 'points_added', 'num_closed', 'num_created', 'mean_days_to_resolution', 'days_to_resolution_per_point', 'points_per_task', 'tasks_per_point', ] %}
   <div class="col-sm-3">
     <div class="card">
       <div class="card-body">
         <h5 class="card-title">{{ stats[attr].name }}</h5>
         <p class="card-text">
-          Max: {{ stats[attr].max }}<br/>
-          Min: {{ stats[attr].min }}<br/>
-          Mean: {{ stats[attr].mean }}<br/>
-          Median: {{ stats[attr].median }}<br/>
+          Max: {{ "%.2f" | format(stats[attr].max) }}<br/>
+          Min: {{ "%.2f" | format(stats[attr].min) }}<br/>
+          Mean: {{ "%.2f" | format(stats[attr].mean) }}<br/>
+          Median: {{ "%.2f" | format(stats[attr].median) }}<br/>
         </p>
       </div>
     </div>
@@ -117,7 +199,7 @@
 
 <div class="mt-3"></div>
 
-<h3>{{ name }} Details</h3>
+<h3>{{ name }} Details (per {{ filter_params.interval }})</h3>
 
 <div class="accordion" id="tasks-accordion">
   {% for task_metric in metrics %}

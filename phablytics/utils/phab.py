@@ -2,9 +2,9 @@
 from __future__ import absolute_import
 
 # Python Standard Library Imports
-import datetime
 import json
 import os
+from functools import lru_cache
 
 # Third Party (PyPI) Imports
 from phabricator import Phabricator
@@ -20,6 +20,7 @@ from phablytics.classes import (
     User,
 )
 from phablytics.constants import MANIPHEST_SUBTYPES
+from phablytics.settings import CUSTOMERS
 
 
 ##
@@ -144,12 +145,19 @@ def get_maniphest_tasks(constraints, order=None):
             '-id',  # oldest first
         ]
 
+    attachments = {
+        # 'columns': False,
+        # 'subscribers': False,
+        'projects': True,
+    }
+
     while has_more_results:
         # handle pagination, since limits are 100 at a time
         results = PHAB.maniphest.search(
             constraints=constraints,
             order=order,
-            after=after
+            after=after,
+            attachments=attachments
         )
 
         cursor = results.get('cursor', {})
@@ -204,7 +212,8 @@ def get_tasks_created_over_period(
     period_start,
     period_end,
     subtypes=None,
-    author_phids=None
+    author_phids=None,
+    project_phids=None
 ):
     subtypes = subtypes or MANIPHEST_SUBTYPES
 
@@ -217,7 +226,14 @@ def get_tasks_created_over_period(
     if author_phids:
         constraints['authorPHIDs'] = author_phids
 
-    tasks = get_maniphest_tasks(constraints)
+    if project_phids:
+        # unlike author_phids, project_phids query is 'AND'
+        tasks = []
+        for project_phid in project_phids:
+            constraints['projects'] = [project_phid]
+            tasks.extend(get_maniphest_tasks(constraints))
+    else:
+        tasks = get_maniphest_tasks(constraints)
 
     return tasks
 
@@ -226,7 +242,8 @@ def get_tasks_closed_over_period(
     period_start,
     period_end,
     subtypes=None,
-    closer_phids=None
+    closer_phids=None,
+    project_phids=None
 ):
     subtypes = subtypes or MANIPHEST_SUBTYPES
 
@@ -239,13 +256,109 @@ def get_tasks_closed_over_period(
     if closer_phids:
         constraints['closerPHIDs'] = closer_phids
 
-    tasks = get_maniphest_tasks(constraints)
+    if project_phids:
+        # unlike closer_phids, project_phids query is 'AND'
+        tasks = []
+        for project_phid in project_phids:
+            constraints['projects'] = [project_phid]
+            tasks.extend(get_maniphest_tasks(constraints))
+    else:
+        tasks = get_maniphest_tasks(constraints)
 
     return tasks
 
 
 ##
 # Projects
+
+
+@lru_cache  # TODO: implement DB-backed or Redis cache with TTL
+def get_all_projects():
+    projects = []
+    has_more_results = True
+    after = None
+
+    while has_more_results:
+        results = PHAB.project.search(after=after)
+
+        cursor = results.get('cursor', {})
+        after = cursor.get('after', None)
+        has_more_results = after is not None
+
+        projects.extend([
+            Project(project_data)
+            for project_data
+            in results.data
+        ])
+
+    return projects
+
+
+PROJECTS_BY_PHID = None
+
+
+def lookup_project_by_phid(phid):
+    global PROJECTS_BY_PHID
+    if not PROJECTS_BY_PHID:
+        all_projects = get_all_projects()
+        PROJECTS_BY_PHID = {
+            project.phid: project
+            for project
+            in all_projects
+        }
+
+    project = PROJECTS_BY_PHID.get(phid)
+    return project
+
+
+@lru_cache  # TODO: implement DB-backed or Redis cache with TTL
+def get_customers():
+    projects = get_all_projects()
+
+    if CUSTOMERS and 'id' in CUSTOMERS:
+        customer_projects = list(filter(
+            lambda project: project.parent.id_ == CUSTOMERS['id'] if project.parent else None,
+            projects
+        ))
+    else:
+        customer_projects = []
+    return customer_projects
+
+
+CUSTOMERS_LOOKUP = None
+
+
+def is_customer(project):
+    global CUSTOMERS_LOOKUP
+    if not CUSTOMERS_LOOKUP:
+        all_customers = get_customers()
+        CUSTOMERS_LOOKUP = {
+            customer.phid: customer
+            for customer
+            in all_customers
+            if customer is not None
+        }
+
+    customer = None if project is None else CUSTOMERS_LOOKUP.get(project.phid)
+    return customer is not None
+
+
+@lru_cache  # TODO: implement DB-backed or Redis cache with TTL
+def get_customer_project(customer_name):
+    customer_projects = get_customers()
+    projects = list(filter(lambda project: project.name == customer_name, customer_projects))
+    if len(projects) > 0:
+        customer_project = projects[0]
+    else:
+        customer_project = None
+    return customer_project
+
+
+# TODO: refactor something because there's also get_projects_by_name()
+def get_bulk_projects_by_name(project_names):
+    all_projects = get_all_projects()
+    projects = [project for project in all_projects if project.name in project_names]
+    return projects
 
 
 def get_project_by_name(project_name, include_members=False):
@@ -359,19 +472,3 @@ def whoami():
     results = PHAB.user.whoami()
     user = User(results.response)
     return user
-
-
-##
-# Misc
-
-
-def pluralize(s):
-    last_char = s[-1]
-
-    if last_char == 'y':
-        pluralized = s[:-1] + 'ies'
-    elif last_char == 's':
-        pluralized = s
-    else:
-        pluralized = s + 's'
-    return pluralized

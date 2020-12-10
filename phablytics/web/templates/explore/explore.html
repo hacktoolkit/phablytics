@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>Explore</h1>
+
+<div class="row row-cols-1 row-cols-md-3">
+  {% for segment in segments %}
+  <div class="col mb-4">
+    <div class="card" style="height: 400px; overflow: auto;">
+      {#<img src="..." class="card-img-top" alt="...">#}
+      <div class="card-body">
+        <h5 class="card-title">{{ segment.name}}</h5>
+        <p class="card-text">
+          <ul>
+            {% if segment.segments %}
+            {# Subsegments #}
+            {% for subsegment in segment.segments %}
+            <li>
+              <a href="/metrics/alltasks?interval=quarter&projects={{ subsegment.projects_str }}">
+                {{ subsegment.name }}
+              </a>
+            </li>
+            {% endfor %}
+            {% else %}
+            {# Regular Projects #}
+            {% for project in segment.projects %}
+            <li>
+              <a href="/metrics/alltasks?interval=quarter&projects={{ project.name }}">
+                {{ project.name }}
+              </a>
+            </li>
+            {% endfor %}
+            {% endif %}
+          </ul>
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

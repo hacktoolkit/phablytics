@@ -1,11 +1,17 @@
 # Python Standard Library Imports
 import datetime
+import re
+from functools import cached_property
 
 # Third Party (PyPI) Imports
 import markdown
 
+# Phablytics Imports
+from phablytics.constants import SERVICE_PREFIX
+
 # Local Imports
 from .settings import (
+    CUSTOMERS,
     GROUPS,
     PHABRICATOR_INSTANCE_BASE_URL,
     REVISION_ACCEPTANCE_THRESHOLD,
@@ -13,6 +19,9 @@ from .settings import (
 
 
 DATE_FORMAT = '%Y-%m-%d'
+
+
+# isort: off
 
 
 class PhabricatorEntity:
@@ -140,6 +149,11 @@ class Maniphest(PhabricatorEntity):
     # Fields attributes
 
     @property
+    def author_phid(self):
+        phid = self.fields['authorPHID']
+        return phid
+
+    @property
     def owner_phid(self):
         owner_phid = self.fields['ownerPHID']
         return owner_phid
@@ -148,6 +162,87 @@ class Maniphest(PhabricatorEntity):
     def points(self):
         points = float(self.fields['points'] or 0)
         return points
+
+    ##
+    # Nested attributes
+
+    @property
+    def project_phids(self):
+        project_phids = [
+            phid
+            for phid
+            in self.attachments.get('projects', {}).get('projectPHIDs', [])
+        ]
+        return project_phids
+
+    @cached_property
+    def projects(self):
+        from phablytics.utils import lookup_project_by_phid
+        projects = [
+            lookup_project_by_phid(phid)
+            for phid
+            in self.project_phids
+        ]
+        return projects
+
+    ##
+    # Derived attributes
+
+    @property
+    def days_to_resolution(self):
+        closed_at = self.closed_at
+        created_at = self.created_at
+
+        if closed_at is not None:
+            days = (closed_at - created_at).days
+        else:
+            days = 0
+
+        return days
+
+    @cached_property
+    def services(self):
+        from phablytics.utils import lookup_project_by_phid
+
+        services = [
+            project
+            for project
+            in self.projects
+            if project and project.name.startswith(SERVICE_PREFIX)
+        ]
+        return services
+
+    @cached_property
+    def service_name(self):
+        if len(self.services) == 1:
+            service_name = self.services[0].service_name
+        elif len(self.services) > 1:
+            service_name = 'Multiple'
+        else:
+            service_name = None
+        return service_name
+
+    @cached_property
+    def customers(self):
+        from phablytics.utils import is_customer
+
+        customers = [
+            project
+            for project
+            in self.projects
+            if is_customer(project)
+        ]
+        return customers
+
+    @cached_property
+    def customer_name(self):
+        if len(self.customers) == 1:
+            customer_name = self.customers[0].customer_name
+        elif len(self.customers) > 1:
+            customer_name = 'Multiple'
+        else:
+            customer_name = None
+        return customer_name
 
 
 class Project(PhabricatorEntity):
@@ -165,6 +260,27 @@ class Project(PhabricatorEntity):
             in members
         ]
         return member_phids
+
+    @property
+    def parent(self):
+        parent_raw_data = self.fields.get('parent', None)
+        parent = Project(parent_raw_data) if parent_raw_data else None
+        return parent
+
+    ##
+    # Derived properties
+
+    @property
+    def customer_name(self):
+        return CUSTOMERS['formatter'](self.name)
+
+    @property
+    def service_name(self):
+        if self.name.startswith(SERVICE_PREFIX):
+            service_name = self.name[len(SERVICE_PREFIX):]
+        else:
+            service_name = None
+        return service_name
 
 
 class ProjectColumn(PhabricatorEntity):

@@ -1,7 +1,3 @@
-# Phablytics
-GITHUB_URL = 'https://github.com/hacktoolkit/phablytics'
-
-
 # Phabricator
 MANIPHEST_STATUSES_OPEN = [
     'awaitingbusiness',
@@ -24,3 +20,5 @@ MANIPHEST_SUBTYPES = [
     'feature',
     'story',
 ]
+
+SERVICE_PREFIX = 'service:'
