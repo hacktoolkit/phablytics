@@ -8,6 +8,7 @@ from flask import Flask
 from werkzeug.routing import BaseConverter
 
 # Phablytics Imports
+from phablytics.web.explore import explore_page
 from phablytics.web.help import help_page
 from phablytics.web.home import home_page
 from phablytics.web.metrics import metrics_page
@@ -45,6 +46,7 @@ application.secret_key = os.environ.get('FLASK_SECRET_KEY', uuid.uuid4().hex)
 application.url_map.converters['regex'] = RegexConverter
 
 
+application.register_blueprint(explore_page)
 application.register_blueprint(help_page)
 application.register_blueprint(home_page)
 application.register_blueprint(metrics_page)
