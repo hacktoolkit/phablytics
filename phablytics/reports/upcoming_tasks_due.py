@@ -13,6 +13,9 @@ from phablytics.utils import (
 )
 
 
+# isort: off
+
+
 class UpcomingProjectTasksDueReport(PhablyticsReport):
     """The Upcoming Project Tasks Due Report shows a list of tasks ordered by creation date or custom key.
     """

@@ -19,8 +19,14 @@ from phablytics.classes import (
     Revision,
     User,
 )
-from phablytics.constants import MANIPHEST_SUBTYPES
+from phablytics.constants import (
+    MANIPHEST_STATUSES_OPEN,
+    MANIPHEST_SUBTYPES,
+)
 from phablytics.settings import CUSTOMERS
+
+
+# isort: off
 
 
 ##
@@ -192,9 +198,7 @@ def get_maniphest_tasks_by_project_name(project_name, column_phids=None, order=N
         'projects': [
             project.phid,
         ],
-        'statuses': [
-            'open',
-        ],
+        'statuses': MANIPHEST_STATUSES_OPEN,
     }
     if column_phids:
         constraints['columnPHIDs'] = column_phids
