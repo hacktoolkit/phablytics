@@ -12,7 +12,7 @@ clean:
 
 ## package - create package for dist
 package:
-	python3 setup.py sdist bdist_wheel
+	python setup.py sdist bdist_wheel
 
 ## repackage - runs clean and package
 repackage: clean package
