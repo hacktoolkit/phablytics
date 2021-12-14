@@ -1,5 +1,61 @@
 # CHANGELOG
 
+## v3.0.1 (2021-04-06)
+-Include all open Maniphest statuses for upcoming tasks due report
+  - awaitingbusiness
+  - inprogress
+  - open
+  - stalled
+
+## v3.0.0 (2020-12-22)
+- added Explore page and blueprint
+- adds mechanism to retrieve a list of Customers (special Project tag)
+- adds the ability to filter task metrics by Customer
+- styling for applied filters string
+- formatting for task metrics
+- adds custom segments (including nested segments) for projects on explore page
+- filter by bulk project names
+- add hyperlinks with quarter interval to explore
+- slightly improved interval calculation
+- improved section headings indicating interval
+- adds aggregated metrics, normalized metrics and rate metrics
+- tasks by project_phids query use AND, so need to make multiple queries
+- display 2 decimal points
+- adds AggregatedTaskMetricsStats as companion to TaskMetricsStats
+- segment tasks by customer, users, and service
+- move/refactor utils.py and constants.py into module with submodules
+- add checks for null projects
+
+## v2.7.0 (2020-11-19)
+- adds statistical analysis
+
+## v2.6.0 (2020-11-19)
+- Version bump only
+
+## v2.5.0 (2020-11-18)
+- adds Stories, Features, Tasks in addition to Bugs as metric types
+
+## v2.4.0 (2020-11-18)
+- adds filters to web metrics
+- adds the ability to select interval: week/month
+- adds the ability to set custom start and end period
+
+## v2.3.0 (2020-11-18)
+- Adds breadcrumbs to website
+
+## v2.2.1 (2020-11-04)
+- Adds report setting: non_group_reviewer_acceptance_threshold
+- Allows requiring a minimum number of acceptances by non-group reviewers for GroupReviewStatusReport
+
+## v2.2.0 (2020-10-27)
+- Adds GroupReviewStatusReport
+- adds web link for RevisionStatusReport and GroupsReviewStatusReport
+- convert REPORTS config from dict to list
+
+## v2.1.2 (2020-10-21)
+- update Maniphest open, closed statuses
+- fix BugMetric namedtuple name
+
 ## v2.1.1 (2020-08-25)
 
 - Use accordion component to show/collapse bugs
