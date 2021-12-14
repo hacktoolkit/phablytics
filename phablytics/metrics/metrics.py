@@ -1,7 +1,7 @@
 # Python Standard Library Imports
 import datetime
 import pprint
-from collections import namedtuple
+from dataclasses import dataclass
 
 # Third Party (PyPI) Imports
 import numpy
@@ -11,7 +11,11 @@ from phablytics.constants import (
     MANIPHEST_STATUSES_CLOSED,
     MANIPHEST_STATUSES_OPEN,
 )
-from phablytics.metrics.constants import DATE_FORMAT_MDY_SHORT
+from phablytics.metrics.constants import (
+    DATE_FORMAT_MDY_SHORT,
+    DEFAULT_INTERVAL_DAYS,
+    INTERVAL_DAYS_MAP,
+)
 from phablytics.metrics.stats import TaskMetricsStats
 from phablytics.utils import (
     get_bulk_projects_by_name,
@@ -41,10 +45,16 @@ class MetricMeta(type):
         return desc
 
 
+@dataclass
 class TaskMetric(
-    namedtuple('TaskMetric', 'period_name,period_start,period_end,tasks_created,tasks_closed'),
     metaclass=MetricMeta
 ):
+    period_name: str
+    period_start: datetime.datetime
+    period_end: datetime.datetime
+    tasks_created: list
+    tasks_closed: list
+
     """Tracks tasks opened vs closed over time.
     """
     def as_dict(self):
@@ -158,13 +168,6 @@ METRICS = [
     TaskMetric,
 ]
 
-INTERVAL_DAYS_MAP = {
-    'week': 7,
-    'month': 30,
-    'quarter': 90,
-}
-DEFAULT_INTERVAL_DAYS = INTERVAL_DAYS_MAP['week']
-
 
 class Metrics:
     def _retrieve_task_metrics(
@@ -187,7 +190,6 @@ class Metrics:
             raise Exception('period_start must be before period_end')
 
         interval_days = INTERVAL_DAYS_MAP.get(interval, DEFAULT_INTERVAL_DAYS)
-
         if team:
             project = get_project_by_name(team, include_members=True)
             team_member_phids = project.member_phids

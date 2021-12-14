@@ -12,7 +12,11 @@ from wtforms import (
 )
 
 # Phablytics Imports
-from phablytics.metrics.constants import DATE_FORMAT_YMD
+from phablytics.metrics.constants import (
+    DATE_FORMAT_YMD,
+    DEFAULT_INTERVAL_OPTION,
+    INTERVAL_OPTIONS,
+)
 from phablytics.settings import PROJECT_TEAM_NAMES
 from phablytics.utils import (
     end_of_month,
@@ -24,19 +28,10 @@ from phablytics.utils import (
 from phablytics.web.utils import format_choices
 
 
-INTERVAL_OPTIONS = [
-    'week',
-    'month',
-    'quarter',
-]
-DEFAULT_INTERVAL_OPTION = 'month'
-
-
 def get_filter_params():
     interval = request.args.get('interval', DEFAULT_INTERVAL_OPTION)
 
     today = datetime.date.today()
-
 
     if interval == 'month':
         period_end_default = end_of_month(today)
@@ -45,6 +40,7 @@ def get_filter_params():
         period_end_default = end_of_quarter(today)
         period_start_default = start_of_quarter(period_end_default - datetime.timedelta(days=360))
     else:
+        # `interval == 'week'` or unspecified
         last_month = today - datetime.timedelta(days=31)
         tomorrow = today + datetime.timedelta(days=1)
 
