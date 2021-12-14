@@ -1,7 +1,13 @@
 # CHANGELOG
 
+## v3.1.0 (2021-12-13)
+- Fixes metric aggregation by customer, service, and owner (#12)
+- Fixes `start_of_month` by simply using `1`, instead of `calendar.monthrange[0]`, (#11)
+- Minor improvements to metrics explorer (#10)
+- adds `CUSTOM_STATIC_DIR` and `CUSTOM_STYLESHEETS` served by `{{ url_for('custom_static', filename=filename) }}` (#9)
+
 ## v3.0.1 (2021-04-06)
--Include all open Maniphest statuses for upcoming tasks due report
+- Include all open Maniphest statuses for upcoming tasks due report
   - awaitingbusiness
   - inprogress
   - open
