@@ -1,4 +1,5 @@
 # Python Standard Library Imports
+import datetime
 import itertools
 import json
 import random
@@ -93,17 +94,24 @@ class TaskMetricsStats:
 
         aggregated_stats = AggregatedTaskMetricsStats(
             metric_cls,
-            period_start,
-            period_end,
-            tasks_created,
-            tasks_closed
+            period_start: datetime.datetime,
+            period_end: datetime.datetime,
+            tasks_created: list,
+            tasks_closed: list
         )
 
         return aggregated_stats
 
 
 class AggregatedTaskMetricsStats:
-    def __init__(self, metric_cls, period_start, period_end, tasks_created, tasks_closed):
+    def __init__(
+        self,
+        metric_cls,
+        period_start: datetime.datetime,
+        period_end: datetime.datetime,
+        tasks_created: list,
+        tasks_closed: list
+    ):
         self.metric_cls = metric_cls
         self.period_start = period_start
         self.period_end = period_end
@@ -127,7 +135,14 @@ class AggregatedTaskMetricsStats:
 
         self._build_segments()
 
-    def _build_metric(self, name, period_start, period_end, tasks_created, tasks_closed):
+    def _build_metric(
+        self,
+        name: str,
+        period_start: datetime.datetime,
+        period_end: datetime.datetime,
+        tasks_created: list,
+        tasks_closed: list
+    ):
         metric = self.metric_cls(
             period_name=name,
             period_start=period_start,
@@ -182,13 +197,12 @@ class AggregatedTaskMetricsStats:
             'name': 'Tasks by Customer',
         }
 
+        _grouping_key = lambda task: task.customer_name or 'General'
+        tasks_closed_sorted_by_customer = sorted(self.tasks_closed, key=_grouping_key)
         tasks_by_customers = {
             customer: list(tasks)
             for customer, tasks
-            in itertools.groupby(
-                self.tasks_closed,
-                lambda task: task.customer_name or 'General'
-            )
+            in itertools.groupby(tasks_closed_sorted_by_customer, _grouping_key)
         }
 
         metrics = [
@@ -247,13 +261,12 @@ class AggregatedTaskMetricsStats:
             'name': 'Tasks by Owner/Author',
         }
 
+        _grouping_key = lambda task: task.owner_phid or task.author_phid
+        tasks_closed_sorted_by_owners = sorted(self.tasks_closed, key=_grouping_key)
         tasks_closed_by_owners = {
             user_phid: list(tasks)
             for user_phid, tasks
-            in itertools.groupby(
-                self.tasks_closed,
-                lambda task: task.owner_phid
-            )
+            in itertools.groupby(tasks_closed_sorted_by_owners, _grouping_key)
             if user_phid
         }
 
@@ -315,13 +328,13 @@ class AggregatedTaskMetricsStats:
             'name': 'Tasks by Service',
         }
 
+        _grouping_key = lambda task: task.service_name or 'General'
+
+        tasks_closed_sorted_by_services = sorted(self.tasks_closed, key=_grouping_key)
         tasks_by_services = {
             service: list(tasks)
             for service, tasks
-            in itertools.groupby(
-                self.tasks_closed,
-                lambda task: task.service_name or 'General'
-            )
+            in itertools.groupby(tasks_closed_sorted_by_services, _grouping_key)
         }
 
         metrics = [

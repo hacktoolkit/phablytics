@@ -75,22 +75,22 @@ class TaskMetric(
     # Raw Metrics
 
     @property
-    def num_created(self):
+    def num_created(self) -> int:
         num_created = len(self.tasks_created)
         return num_created
 
     @property
-    def num_closed(self):
+    def num_closed(self) -> int:
         num_closed = len(self.tasks_closed)
         return num_closed
 
     @property
-    def points_added(self):
+    def points_added(self) -> int:
         points = sum([task.points for task in self.tasks_created])
         return points
 
     @property
-    def points_completed(self):
+    def points_completed(self) -> int:
         points = sum([task.points for task in self.tasks_closed])
         return points
 
@@ -98,7 +98,7 @@ class TaskMetric(
     # Ratio Metrics
 
     @property
-    def ratio(self):
+    def ratio(self) -> float:
         try:
             ratio = self.num_closed / self.num_created
         except ZeroDivisionError:
@@ -106,12 +106,12 @@ class TaskMetric(
         return ratio
 
     @property
-    def num_created_per_total(self):
+    def num_created_per_total(self) -> float:
         rate = 1.0 * self.num_created / max(self.num_closed + self.num_created, 1)
         return rate
 
     @property
-    def mean_days_to_resolution(self):
+    def mean_days_to_resolution(self) -> float:
         values = [task.days_to_resolution for task in self.tasks_closed]
         mean_days = numpy.mean(values) if values else 0
         return mean_days
@@ -120,18 +120,18 @@ class TaskMetric(
     # Normalized Metrics
 
     @property
-    def days_to_resolution_per_point(self):
+    def days_to_resolution_per_point(self) -> float:
         days = sum([task.days_to_resolution for task in self.tasks_closed])
         days_per_story_point = 1.0 * days / max(self.points_completed, 1)
         return days_per_story_point
 
     @property
-    def points_per_task(self):
+    def points_per_task(self) -> float:
         points_per_task = 1.0 * self.points_completed / max(self.num_closed, 1)
         return points_per_task
 
     @property
-    def tasks_per_point(self):
+    def tasks_per_point(self) -> float:
         tasks_per_point = 1.0 * self.num_closed / max(self.points_completed, 1)
         return tasks_per_point
 
@@ -172,13 +172,13 @@ METRICS = [
 class Metrics:
     def _retrieve_task_metrics(
         self,
-        interval,
-        period_start,
-        period_end,
-        task_subtypes,
-        team=None,
-        customer=None,
-        projects=None,
+        interval: str,
+        period_start: datetime.datetime,
+        period_end: datetime.datetime,
+        task_subtypes: list[str],
+        team: str=None,
+        customer: str=None,
+        projects: list=None,
         *args,
         **kwargs
     ):
@@ -250,7 +250,14 @@ class Metrics:
 
         return stats
 
-    def alltasks(self, interval, period_start, period_end, *args, **kwargs):
+    def alltasks(
+        self,
+        interval: str,
+        period_start: datetime.datetime,
+        period_end: datetime.datetime,
+        *args,
+        **kwargs
+    ):
         """Returns the rate of tasks opened/closed over a period
         """
         task_subtypes = [
@@ -269,7 +276,14 @@ class Metrics:
         )
         return stats
 
-    def bugs(self, interval, period_start, period_end, *args, **kwargs):
+    def bugs(
+        self,
+        interval: str,
+        period_start: datetime.datetime,
+        period_end: datetime.datetime,
+        *args,
+        **kwargs
+    ):
         """Returns the rate of bugs opened/closed over a period
         """
         task_subtypes = [
@@ -285,7 +299,14 @@ class Metrics:
         )
         return stats
 
-    def features(self, interval, period_start, period_end, *args, **kwargs):
+    def features(
+        self,
+        interval,
+        period_start,
+        period_end,
+        *args,
+        **kwargs
+    ):
         """Returns the rate of features opened/closed over a period
         """
         task_subtypes = [
@@ -302,7 +323,14 @@ class Metrics:
         )
         return stats
 
-    def stories(self, interval, period_start, period_end, *args, **kwargs):
+    def stories(
+        self,
+        interval: str,
+        period_start: datetime.datetime,
+        period_end: datetime.datetime,
+        *args,
+        **kwargs
+    ):
         """Returns the rate of stories opened/closed over a period
         """
         task_subtypes = [
@@ -319,7 +347,14 @@ class Metrics:
         )
         return stats
 
-    def tasks(self, interval, period_start, period_end, *args, **kwargs):
+    def tasks(
+        self,
+        interval: str,
+        period_start: datetime.datetime,
+        period_end: datetime.datetime,
+        *args,
+        **kwargs
+    ):
         """Returns the rate of tasks opened/closed over a period
         """
         task_subtypes = [
