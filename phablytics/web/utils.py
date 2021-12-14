@@ -14,6 +14,7 @@ import phablytics
 from phablytics.constants import GITHUB_URL
 from phablytics.settings import (
     ADMIN_USERNAME,
+    CUSTOM_STYLESHEETS,
     PHABRICATOR_INSTANCE_BASE_URL,
 )
 from phablytics.web.constants import (
@@ -48,6 +49,8 @@ def get_context_data():
         page_title = SITE_NAME
 
     context_data = {
+        # customizations
+        'custom_stylesheets': CUSTOM_STYLESHEETS,
         # page meta
         'nav_links': nav_links,
         'breadcrumbs': breadcrumbs,

@@ -25,7 +25,6 @@ REVISION_ACCEPTANCE_THRESHOLD = 2
 
 # Reports
 
-
 @dataclass
 class ReportConfig:
     name: str
@@ -123,6 +122,11 @@ REPORTS = [
     ),
 ]
 
+# Web UI
+
+CUSTOM_STATIC_DIR = None
+
+CUSTOM_STYLESHEETS = []
 
 ##
 # Import Local Settings if `local_settings.py` exists in CWD
