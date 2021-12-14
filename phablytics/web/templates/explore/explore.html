@@ -17,7 +17,7 @@
             {# Subsegments #}
             {% for subsegment in segment.segments %}
             <li>
-              <a href="/metrics/alltasks?interval=quarter&projects={{ subsegment.projects_str }}">
+              <a href="/metrics/alltasks?projects={{ subsegment.projects_str }}">
                 {{ subsegment.name }}
               </a>
             </li>
@@ -26,7 +26,7 @@
             {# Regular Projects #}
             {% for project in segment.projects %}
             <li>
-              <a href="/metrics/alltasks?interval=quarter&projects={{ project.name }}">
+              <a href="/metrics/alltasks?projects={{ project.name }}">
                 {{ project.name }}
               </a>
             </li>
