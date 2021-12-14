@@ -94,10 +94,10 @@ class TaskMetricsStats:
 
         aggregated_stats = AggregatedTaskMetricsStats(
             metric_cls,
-            period_start: datetime.datetime,
-            period_end: datetime.datetime,
-            tasks_created: list,
-            tasks_closed: list
+            period_start,
+            period_end,
+            tasks_created,
+            tasks_closed
         )
 
         return aggregated_stats
