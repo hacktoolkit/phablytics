@@ -37,11 +37,15 @@ def end_of_quarter(dt):
     return end_of_quarter
 
 
-def start_of_month(dt):
+def start_of_month(dt: datetime.datetime):
+    """Returns the first day of the month for `dt`.
+    """
     y, m, d = dt.year, dt.month, dt.day
-    return datetime.date(y, m, calendar.monthrange(y, m)[0])
+    return datetime.date(y, m, 1)
 
 
-def end_of_month(dt):
+def end_of_month(dt: datetime.datetime):
+    """Returns the last day of the month for `dt`.
+    """
     y, m, d = dt.year, dt.month, dt.day
     return datetime.date(y, m, calendar.monthrange(y, m)[1])
