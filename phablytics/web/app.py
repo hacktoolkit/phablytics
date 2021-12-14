@@ -4,10 +4,14 @@ import os
 import uuid
 
 # Third Party (PyPI) Imports
-from flask import Flask
+from flask import (
+    Flask,
+    send_from_directory,
+)
 from werkzeug.routing import BaseConverter
 
 # Phablytics Imports
+from phablytics.settings import CUSTOM_STATIC_DIR
 from phablytics.web.explore import explore_page
 from phablytics.web.help import help_page
 from phablytics.web.home import home_page
@@ -56,3 +60,8 @@ application.register_blueprint(reports_page)
 @application.errorhandler(404)
 def page_not_found(e):
     return _r('404.html')
+
+
+@application.route('/custom_static/<path:filename>')
+def custom_static(filename):
+    return send_from_directory(CUSTOM_STATIC_DIR, filename)
