@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v3.1.1 (2021.12-13)
+- Removes an incorrect type hint        
+
 ## v3.1.0 (2021-12-13)
 - Fixes metric aggregation by customer, service, and owner (#12)
 - Fixes `start_of_month` by simply using `1`, instead of `calendar.monthrange[0]`, (#11)
