@@ -26,8 +26,8 @@ NAV_LINKS = [
 
 
 # Breadcrumbs are automatically inflected based on the final phrase of a URL path.
-# Overrides can be set based on paths in the BREADCRUMBS dict.
-BREADCRUMBS = {
+# Overrides can be set based on paths in the BREADCRUMB_OVERRIDES dict.
+BREADCRUMB_OVERRIDES = {
     '/' : 'Home',
     '/explore': 'Explore',
     '/metrics': 'Metrics',

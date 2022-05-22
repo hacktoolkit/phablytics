@@ -1,7 +1,10 @@
 # CHANGELOG
 
-## v3.1.1 (2021.12-13)
-- Removes an incorrect type hint        
+## v3.1.2 (2022-05-21)
+- Fixes breadcrumbs for report names by preserving case
+
+## v3.1.1 (2021-12-13)
+- Removes an incorrect type hint
 
 ## v3.1.0 (2021-12-13)
 - Fixes metric aggregation by customer, service, and owner (#12)

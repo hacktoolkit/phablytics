@@ -1,5 +1,6 @@
 # Python Standard Library Imports
 import copy
+import re
 
 # Third Party (PyPI) Imports
 from flask import (
@@ -18,10 +19,13 @@ from phablytics.settings import (
     PHABRICATOR_INSTANCE_BASE_URL,
 )
 from phablytics.web.constants import (
-    BREADCRUMBS,
+    BREADCRUMB_OVERRIDES,
     NAV_LINKS,
     SITE_NAME,
 )
+
+
+REPORT_PATH_REGEX = re.compile(r'^/reports/[^/]+$')
 
 
 def custom_render_template(template_name, context_data=None):
@@ -79,6 +83,11 @@ def get_nav_links():
     return nav_links
 
 
+def is_report_name_path(path):
+    result = REPORT_PATH_REGEX.match(path) is not None
+    return result
+
+
 def get_breadcrumbs():
     breadcrumbs = []
 
@@ -91,8 +100,26 @@ def get_breadcrumbs():
 
     for i, path_part in enumerate(path_parts):
         path = '/'.join(path_parts[:i + 1]) or '/'
+        path_suffix = '/'.join(path_parts[i + 1:])
         is_active = i + 1 == len(path_parts)
-        name = BREADCRUMBS.get(path, path_part.title())
+
+        default_breadcrumb_name = (
+            path_part
+            if (
+                # leave alone if any conditions are satisfied
+                is_report_name_path(path)
+            )
+            # else format breadcrumb as Titlecase
+            else path_part.title()
+        )
+
+        name = BREADCRUMB_OVERRIDES.get(
+            path,  # get breadcrumb by full path
+            BREADCRUMB_OVERRIDES.get(
+                path_suffix,  # get breadcrumb by path_suffix
+                default_breadcrumb_name  # fallback: generated breadcrumb based on path
+            )
+        )
         breadcrumb = {
             'name': name,
             'url': path,
