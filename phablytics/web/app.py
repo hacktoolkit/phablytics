@@ -12,11 +12,12 @@ from werkzeug.routing import BaseConverter
 
 # Phablytics Imports
 from phablytics.settings import CUSTOM_STATIC_DIR
-from phablytics.web.explore import explore_page
-from phablytics.web.help import help_page
-from phablytics.web.home import home_page
-from phablytics.web.metrics import metrics_page
-from phablytics.web.reports import reports_page
+from phablytics.web.explore import explore_endpoints
+from phablytics.web.help import help_endpoints
+from phablytics.web.home import home_endpoints
+from phablytics.web.metrics import metrics_endpoints
+from phablytics.web.reports import reports_endpoints
+from phablytics.web.users import users_endpoints
 from phablytics.web.utils import custom_render_template as _r
 
 
@@ -50,11 +51,12 @@ application.secret_key = os.environ.get('FLASK_SECRET_KEY', uuid.uuid4().hex)
 application.url_map.converters['regex'] = RegexConverter
 
 
-application.register_blueprint(explore_page)
-application.register_blueprint(help_page)
-application.register_blueprint(home_page)
-application.register_blueprint(metrics_page)
-application.register_blueprint(reports_page)
+application.register_blueprint(explore_endpoints, url_prefix='/explore')
+application.register_blueprint(help_endpoints, url_prefix='/help')
+application.register_blueprint(home_endpoints, url_prefix='/')
+application.register_blueprint(metrics_endpoints, url_prefix='/metrics')
+application.register_blueprint(reports_endpoints, url_prefix='/reports')
+application.register_blueprint(users_endpoints, url_prefix='/users')
 
 
 @application.errorhandler(404)

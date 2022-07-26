@@ -246,6 +246,10 @@ class Maniphest(PhabricatorEntity):
 
 
 class Project(PhabricatorEntity):
+    def __str__(self):
+        value = f'{self.type_}: {self.name}'
+        return value
+
     @property
     def attachments(self):
         attachments = self.raw_data.get('attachments', {})

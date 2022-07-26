@@ -27,7 +27,8 @@ Analytics, metrics, and reports for Phabricator (https://phacility.com/phabricat
 
 # Authors and Maintainers
 
-[Hacktoolkit](https://github.com/hacktoolkit) and [Jonathan Tsai](https://github.com/jontsai)
+- [Hacktoolkit](https://github.com/hacktoolkit)
+- [Jonathan Tsai](https://github.com/jontsai)
 
 # License
 

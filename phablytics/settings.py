@@ -10,8 +10,9 @@ from dataclasses import (
 ##
 # Various Settings and Configuration Variables
 
-PHABLYTICS_BASE_URL = None
+PHABLYTICS_BASE_URL = 'configure_me'
 PHABRICATOR_INSTANCE_BASE_URL = 'configure_me'
+CONDUIT_API_TOKEN = 'configure_me'
 
 ADMIN_USERNAME = 'configure_me'
 

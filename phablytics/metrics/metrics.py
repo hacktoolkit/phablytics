@@ -23,6 +23,7 @@ from phablytics.utils import (
     get_project_by_name,
     get_tasks_closed_over_period,
     get_tasks_created_over_period,
+    get_user_by_username,
     pluralize,
 )
 
@@ -179,9 +180,14 @@ class Metrics:
         team: str=None,
         customer: str=None,
         projects: list=None,
+        username: str=None,
         *args,
         **kwargs
     ):
+        """The params on this function should match the keys on the result of
+
+        `phablytics.web.metrics.forms.get_filter_params`
+        """
         now = datetime.datetime.now()
 
         task_metrics = []
@@ -211,6 +217,10 @@ class Metrics:
             project_phids.extend([project.phid for project in projects])
 
         end = period_end
+
+        if username:
+            user = get_user_by_username(username)
+            team_member_phids = [user.phid]
 
         # TODO: implement make_intervals(period_start, period_end, interval)
         while end > period_start:

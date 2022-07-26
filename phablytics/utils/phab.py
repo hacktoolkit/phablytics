@@ -23,7 +23,11 @@ from phablytics.constants import (
     MANIPHEST_STATUSES_OPEN,
     MANIPHEST_SUBTYPES,
 )
-from phablytics.settings import CUSTOMERS
+from phablytics.settings import (
+    CONDUIT_API_TOKEN,
+    CUSTOMERS,
+    PHABRICATOR_INSTANCE_BASE_URL,
+)
 
 
 # isort: off
@@ -33,7 +37,10 @@ from phablytics.settings import CUSTOMERS
 # Phabricator / Conduit Utils
 
 
-PHAB = Phabricator()
+PHAB = Phabricator(
+    host=f'{PHABRICATOR_INSTANCE_BASE_URL}/api/',
+    token=CONDUIT_API_TOKEN
+)
 
 
 def update_interfaces():
@@ -166,15 +173,16 @@ def get_maniphest_tasks(constraints, order=None):
             attachments=attachments
         )
 
-        cursor = results.get('cursor', {})
-        after = cursor.get('after', None)
-        has_more_results = after is not None
-
         tasks.extend([
             Maniphest(task_data)
             for task_data
             in results.data
         ])
+
+        cursor = results.get('cursor', {})
+        after = cursor.get('after', None)
+        has_more_results = after is not None
+
 
     return tasks
 
@@ -445,20 +453,72 @@ def get_repos_by_phid(phids):
 # Users
 
 
-def get_users_by_username(usernames):
-    constraints = {
-        'usernames': usernames,
-    }
-    results = PHAB.user.search(
-        constraints=constraints
-    )
-    users = [
-        user
-        for user_data
-        in results.data
-        if (user := User(user_data)).username in usernames
-    ]
+def fetch_users(usernames=None):
+    """Fetches all active users
+
+    https://secure.phabricator.com/conduit/method/user.search/
+    """
+    users = []
+    has_more_results = True
+    after = None
+
+    constraints = {}
+    if usernames is not None:
+        usernames_set = set(usernames)
+        constraints['usernames'] = usernames
+        queryKey = None
+    else:
+        usernames_set = None
+        # only fetch active users if no `usernames` are specified
+        queryKey = 'active'
+
+    while has_more_results:
+        # handle pagination, since limits are 100 at a time
+        results = PHAB.user.search(
+            constraints=constraints,
+            queryKey=queryKey,
+            order=['username', ],
+            after=after
+        )
+
+        cur_users = [
+            User(user_data)
+            for user_data
+            in results.data
+        ]
+        if usernames_set is not None:
+            cur_users = [user for user in cur_users if user.username in usernames_set]
+
+        users.extend(cur_users)
+
+        cursor = results.get('cursor', {})
+        after = cursor.get('after', None)
+        has_more_results = after is not None
+
     return users
+
+
+@lru_cache
+def get_active_usernames():
+    """Retrieves a list of all active usernames
+    """
+    users = fetch_users()
+    usernames = [user.username for user in users]
+    return usernames
+
+
+def get_users_by_username(usernames):
+    """Retrieves a list of users corresponding to `usernames`
+    """
+    users = fetch_users(usernames=usernames)
+    return users
+
+
+@lru_cache
+def get_user_by_username(username):
+    users = get_users_by_username([username])
+    user = users[0]
+    return user
 
 
 def get_users_by_phid(phids):

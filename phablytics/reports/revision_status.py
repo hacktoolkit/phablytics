@@ -21,6 +21,9 @@ from phablytics.utils import (
 )
 
 
+# isort: off
+
+
 class RevisionStatusReport(PhablyticsReport):
     """The Revision Status Report shows a list of Diffs being worked on by a team,
     and outputs them based on their acceptance/needs review status
@@ -38,7 +41,12 @@ class RevisionStatusReport(PhablyticsReport):
         self.user_phids.extend(phids)
 
     def _add_repo(self, phid):
-        self.repo_phids.append(phid)
+        if phid is not None:
+            self.repo_phids.append(phid)
+        else:
+            # do nothing
+            # likely/somehow, a diff or revision does not have an associated repository
+            pass
 
     def _lookup_phids(self):
         """Build lookup tables for User and Repo phids in batch
@@ -120,11 +128,15 @@ class RevisionStatusReport(PhablyticsReport):
         return formatted
 
     def _format_and_append_revision_to_report(self, report, revision, count, slack=True):
-        repo = self.repos_lookup[revision.repo_phid]
-        if slack:
-            repo_link = f'<{repo.repository_url}|{repo.slug}>'
+        repo = self.repos_lookup.get(revision.repo_phid)
+
+        if repo is None:
+            repo_link = 'N/A'
         else:
-            repo_link = f'[{repo.slug}]({repo.repository_url})'
+            if slack:
+                repo_link = f'<{repo.repository_url}|{repo.slug}>'
+            else:
+                repo_link = f'[{repo.slug}]({repo.repository_url})'
 
         acceptors = [f'{self._format_user_phid(phid, slack=slack)}' for phid in revision.acceptor_phids]
         blockers = [f'{self._format_user_phid(phid, slack=slack)}' for phid in revision.blocker_phids]

@@ -17,14 +17,14 @@ from phablytics.settings import REPORTS
 from phablytics.web.utils import custom_render_template as _r
 
 
-reports_page = Blueprint(
-    'reports_page',
+reports_endpoints = Blueprint(
+    'reports_endpoints',
     __name__,
     template_folder='templates'
 )
 
 
-@reports_page.route('/reports', defaults={'page': 'index'})
+@reports_endpoints.route('', defaults={'page': 'index'})
 def index(page):
     # report_names = get_report_names()
     context_data = {
@@ -33,7 +33,7 @@ def index(page):
     return _r('reports/%s.html' % page, context_data=context_data)
 
 
-@reports_page.route('/reports/<report_name>')
+@reports_endpoints.route('/<report_name>')
 def show(report_name):
     report_config = get_report_config(report_name)
     report_config.slack = False

@@ -16,14 +16,14 @@ from phablytics.web.metrics.forms import (
 from phablytics.web.utils import custom_render_template as _r
 
 
-metrics_page = Blueprint(
-    'metrics_page',
+metrics_endpoints = Blueprint(
+    'metrics_endpoints',
     __name__,
     template_folder='templates'
 )
 
 
-@metrics_page.route('/metrics', defaults={'page': 'index'})
+@metrics_endpoints.route('', defaults={'page': 'index'})
 def index(page):
     context_data = {
         'metrics': METRICS,
@@ -32,7 +32,7 @@ def index(page):
     return _r('metrics/%s.html' % page, context_data=context_data)
 
 
-@metrics_page.route('/metrics/<page>')
+@metrics_endpoints.route('/<page>')
 def show_metric(page):
     filter_params = get_filter_params()
     filter_form = MetricsFilterForm(**filter_params)

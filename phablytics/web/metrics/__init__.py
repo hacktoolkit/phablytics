@@ -1,2 +1,2 @@
 # Phablytics Imports
-from phablytics.web.metrics.metrics import metrics_page
+from phablytics.web.metrics.views import metrics_endpoints

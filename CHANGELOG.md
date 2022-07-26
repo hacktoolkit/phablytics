@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## NEXT RELEASE (v3.2.0?) (2022-07-26)
+- Updates to use explicitly set Conduit API token, Phabricator base URL, etc
+- Adds `/users` listing page and user profile page
+- Adds utils for fetching users: single user by user name, multiple users, all active users
+- Adds the ability to show metrics for specific users
+- Adds more colors from flatuicolors.com
+- Upgrades to Chart.js 3.8.0 and adds legend event hooks
+- cleanup: rename `*_pages` to `*_endpoints` for several view
+
 ## v3.1.2 (2022-05-21)
 - Fixes breadcrumbs for report names by preserving case
 

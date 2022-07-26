@@ -1,2 +1,2 @@
 # Phablytics Imports
-from phablytics.web.home.home import home_page
+from phablytics.web.home.views import home_endpoints

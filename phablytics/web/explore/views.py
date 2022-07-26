@@ -6,14 +6,14 @@ from phablytics.segments.utils import build_project_segments
 from phablytics.web.utils import custom_render_template as _r
 
 
-explore_page = Blueprint(
-    'explore_page',
+explore_endpoints = Blueprint(
+    'explore_endpoints',
     __name__,
     template_folder='templates'
 )
 
 
-@explore_page.route('/explore')
+@explore_endpoints.route('')
 def index():
     segments = build_project_segments()
     context_data = {

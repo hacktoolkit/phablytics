@@ -25,7 +25,11 @@ from phablytics.web.constants import (
 )
 
 
+# isort: off
+
+
 REPORT_PATH_REGEX = re.compile(r'^/reports/[^/]+$')
+USER_PROFILE_PATH_REGEX = re.compile(r'^/users/[^/]+$')
 
 
 def custom_render_template(template_name, context_data=None):
@@ -88,6 +92,11 @@ def is_report_name_path(path):
     return result
 
 
+def is_user_profile_path(path):
+    result = USER_PROFILE_PATH_REGEX.match(path) is not None
+    return result
+
+
 def get_breadcrumbs():
     breadcrumbs = []
 
@@ -108,6 +117,7 @@ def get_breadcrumbs():
             if (
                 # leave alone if any conditions are satisfied
                 is_report_name_path(path)
+                or is_user_profile_path(path)
             )
             # else format breadcrumb as Titlecase
             else path_part.title()

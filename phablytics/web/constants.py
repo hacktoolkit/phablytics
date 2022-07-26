@@ -19,6 +19,10 @@ NAV_LINKS = [
         'path': '/reports',
     },
     {
+        'name': 'Users',
+        'path': '/users',
+    },
+    {
         'name': 'Help',
         'path': '/help',
     },
@@ -33,5 +37,6 @@ BREADCRUMB_OVERRIDES = {
     '/metrics': 'Metrics',
     '/metrics/alltasks': 'All Tasks',
     '/reports': 'Reports',
+    '/users': 'Users',
     '/help': 'Help',
 }

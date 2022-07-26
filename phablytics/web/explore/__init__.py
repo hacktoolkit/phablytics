@@ -1,2 +1,2 @@
 # Phablytics Imports
-from phablytics.web.explore.explore import explore_page
+from phablytics.web.explore.views import explore_endpoints

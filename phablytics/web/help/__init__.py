@@ -1,2 +1,2 @@
 # Phablytics Imports
-from phablytics.web.help.help import help_page
+from phablytics.web.help.views import help_endpoints

@@ -21,6 +21,7 @@ from phablytics.settings import PROJECT_TEAM_NAMES
 from phablytics.utils import (
     end_of_month,
     end_of_quarter,
+    get_active_usernames,
     get_customers,
     start_of_month,
     start_of_quarter,
@@ -28,7 +29,14 @@ from phablytics.utils import (
 from phablytics.web.utils import format_choices
 
 
+# isort: off
+
+
 def get_filter_params():
+    """Returns a dictionary of form filter params for Metrics
+
+    The result will be passed to `phablytics.metrics.metrics.Metrics::_retrieve_task_metrics()
+    """
     interval = request.args.get('interval', DEFAULT_INTERVAL_OPTION)
 
     today = datetime.date.today()
@@ -66,7 +74,7 @@ def get_filter_params():
 
     customer = request.args.get('customer', '')
     projects = request.args.get('projects', '')
-
+    username = request.args.get('username', '')
 
     filter_params = {
         'interval': interval,
@@ -75,6 +83,7 @@ def get_filter_params():
         'team': team,
         'customer': customer,
         'projects': projects,
+        'username': username,
     }
     return filter_params
 
@@ -105,7 +114,10 @@ class MetricsFilterForm(FlaskForm):
     )
     team = SelectField(
         label='Team',
-        choices=format_choices(PROJECT_TEAM_NAMES, include_blank=True)
+        choices=format_choices(
+            PROJECT_TEAM_NAMES,
+            include_blank=True
+        )
     )
     customer = SelectField(
         label='Customer',
@@ -119,3 +131,10 @@ class MetricsFilterForm(FlaskForm):
         )
     )
     projects = StringField()
+    username = SelectField(
+        label='User',
+        choices=format_choices(
+            get_active_usernames(),
+            include_blank=True
+        ),
+    )

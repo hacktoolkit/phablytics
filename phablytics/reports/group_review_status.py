@@ -23,6 +23,9 @@ from phablytics.utils import (
 )
 
 
+# isort: off
+
+
 class GroupReviewStatusReport(PhablyticsReport):
     """The Group Review Status Report shows a list of Diffs with
     particular reviewers added.

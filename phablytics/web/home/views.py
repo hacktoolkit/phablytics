@@ -5,13 +5,13 @@ from flask import Blueprint
 from phablytics.web.utils import custom_render_template as _r
 
 
-home_page = Blueprint(
-    'home_page',
+home_endpoints = Blueprint(
+    'home_endpoints',
     __name__,
     template_folder='templates'
 )
 
 
-@home_page.route('/')
+@home_endpoints.route('')
 def index():
     return _r('index.html')

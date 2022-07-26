@@ -228,15 +228,15 @@ class AggregatedTaskMetricsStats:
             'data': {
                 'datasets': [
                     {
-                        'label': 'Points completed',
-                        'name': 'Points completed',
+                        'label': 'Points Completed',
+                        'name': 'Points Completed',
                         'data': [
                             metric.points_completed for metric in metrics
                         ],
                         'backgroundColor': colors,
                     },
                     {
-                        'label': 'Tickets Closed',
+                        'label': 'Tasks Closed',
                         'data': [
                             metric.num_closed for metric in metrics
                         ],
@@ -250,7 +250,7 @@ class AggregatedTaskMetricsStats:
         }
 
         segment['metrics'] = metrics
-        segment['chart_config_json'] = json.dumps(chart_config_json)
+        segment['chart_config_json'] = json.dumps(chart_config_json, indent=4)
 
         return segment
 
@@ -290,20 +290,22 @@ class AggregatedTaskMetricsStats:
             in range(len(metrics))
         ]
 
-        # https://www.chartjs.org/samples/latest/charts/doughnut.html
+        # https://www.chartjs.org/docs/latest/samples/other-charts/doughnut.html
         chart_config_json = {
             'type': 'doughnut',
             'data': {
                 'datasets': [
                     {
-                        'label': 'Points completed',
+                        'label': 'Points Completed',
+                        'name': 'Points Completed',
                         'data': [
                             metric.points_completed for metric in metrics
                         ],
                         'backgroundColor': colors,
                     },
                     {
-                        'label': 'Tickets Closed',
+                        'label': 'Tasks Closed',
+                        'name': 'Tasks Closed',
                         'data': [
                             metric.num_closed for metric in metrics
                         ],
@@ -317,7 +319,7 @@ class AggregatedTaskMetricsStats:
         }
 
         segment['metrics'] = metrics
-        segment['chart_config_json'] = json.dumps(chart_config_json)
+        segment['chart_config_json'] = json.dumps(chart_config_json, indent=4)
 
         return segment
 
@@ -360,8 +362,8 @@ class AggregatedTaskMetricsStats:
             'data': {
                 'datasets': [
                     {
-                        'label': 'Points completed',
-                        'name': 'Points completed',
+                        'label': 'Points Completed',
+                        'name': 'Points Completed',
                         'data': [
                             # TODO: fix this
                             # random.randint(1, 100) for metric in metrics
@@ -370,7 +372,8 @@ class AggregatedTaskMetricsStats:
                         'backgroundColor': colors,
                     },
                     {
-                        'label': 'Tickets Closed',
+                        'label': 'Tasks Closed',
+                        'name': 'Tasks Closed',
                         'data': [
                             metric.num_closed for metric in metrics
                         ],
@@ -384,6 +387,6 @@ class AggregatedTaskMetricsStats:
         }
 
         segment['metrics'] = metrics
-        segment['chart_config_json'] = json.dumps(chart_config_json)
+        segment['chart_config_json'] = json.dumps(chart_config_json, indent=4)
 
         return segment

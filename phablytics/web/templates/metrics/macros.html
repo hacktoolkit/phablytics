@@ -69,8 +69,40 @@
 </div>
 
 <script>
+
+  // Append '4d' to the colors (alpha channel), except for the hovered index
+  // https://www.chartjs.org/docs/latest/samples/legend/events.html
+  function handleLegendItemHover(evt, item, legend) {
+      legend.chart.data.datasets.forEach((dataset) => {
+          dataset.backgroundColor.forEach((color, index, colors) => {
+              colors[index] = index === item.index || color.length === 9 ? color : color + '4D';
+          });
+          legend.chart.update();
+      })
+  }
+
+  // Removes the alpha channel from background colors
+  function handleLegendItemLeave(evt, item, legend) {
+      legend.chart.data.datasets.forEach((dataset) => {
+          dataset.backgroundColor.forEach((color, index, colors) => {
+              colors[index] = color.length === 9 ? color.slice(0, -2) : color;
+          });
+          legend.chart.update();
+      });
+  }
+
   var ctx = document.getElementById('chart_{{ segment.key }}').getContext('2d');
   var config = {{ segment.chart_config_json|safe }};
+  config.options = {
+      plugins: {
+          legend: {
+              // https://www.chartjs.org/docs/latest/configuration/legend.html#configuration-options
+              position: 'bottom',
+              onHover: handleLegendItemHover,
+              onLeave: handleLegendItemLeave
+          }
+      }
+  };
 
   var chart = new Chart(ctx, config);
 </script>
@@ -153,23 +185,25 @@
       // Configuration options go here
       options: {
           scales: {
-              yAxes: [
-                  {
-                      id: 'numTasks',
-                      type: 'linear',
-                      position: 'left'
-                  },
-                  {
-                      id: 'taskRate',
-                      type: 'linear',
-                      position: 'right'
-                  },
-                  {
-                      id: 'pointsCompleted',
-                      type: 'linear',
-                      position: 'right'
-                  }
-              ]
+              numTasks: {
+                  type: 'linear',
+                  position: 'left'
+              },
+              taskRate: {
+                  type: 'linear',
+                  position: 'right'
+              },
+              pointsCompleted: {
+                  type: 'linear',
+                  position: 'right'
+              }
+          },
+          plugins: {
+              legend: {
+                  position: 'bottom',
+                  onHover: handleLegendItemHover,
+                  onLeave: handleLegendItemLeave
+              }
           }
       }
   });
