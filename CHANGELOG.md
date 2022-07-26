@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## NEXT RELEASE (v3.2.0?) (2022-07-26)
+## v3.2.0 (2022-07-26)
 - Updates to use explicitly set Conduit API token, Phabricator base URL, etc
 - Adds `/users` listing page and user profile page
 - Adds utils for fetching users: single user by user name, multiple users, all active users
