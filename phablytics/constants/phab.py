@@ -21,4 +21,21 @@ MANIPHEST_SUBTYPES = [
     'story',
 ]
 
+REVISION_STATUSES_WIP = [
+    'changes-planned',
+    'draft',
+]
+
+REVISION_STATUSES_COMPLETED = [
+    'abandoned',
+    'published',
+]
+
+REVISION_STATUSES_IN_REVIEW = [
+    'accepted',
+    'needs-review',
+    'needs-revision',
+]
+
+
 SERVICE_PREFIX = 'service:'

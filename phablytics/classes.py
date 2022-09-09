@@ -7,7 +7,10 @@ from functools import cached_property
 import markdown
 
 # Phablytics Imports
-from phablytics.constants import SERVICE_PREFIX
+from phablytics.constants import (
+    REVISION_STATUSES_WIP,
+    SERVICE_PREFIX,
+)
 
 # Local Imports
 from .settings import (
@@ -498,7 +501,12 @@ class Revision(PhabricatorEntity):
     @property
     def is_wip(self):
         title = self.title
-        is_wip = title.startswith('WIP') or title.startswith('[WIP]') or title.endswith('WIP')
+        is_wip = (
+            self.status_value in REVISION_STATUSES_WIP
+            or title.startswith('WIP')
+            or title.startswith('[WIP]')
+            or title.endswith('WIP')
+        )
         return is_wip
 
 

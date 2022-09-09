@@ -1,6 +1,7 @@
 # Python Standard Library Imports
 import datetime
 import random
+from dataclasses import dataclass
 
 # Third Party (PyPI) Imports
 import emoji
@@ -22,6 +23,25 @@ from phablytics.utils import (
 
 
 # isort: off
+
+
+@dataclass
+class ReportSectionConfig:
+    revisions: list
+    emoji: str
+    suffix: str
+    order_asc: bool = True
+    slack_color: str = None
+    include_in_slack: bool = True
+
+    @property
+    def num_revisions(self):
+        return len(self.revisions)
+
+    @property
+    def order_str(self):
+        value = ('oldest' if self.order_asc else 'newest') + ' first'
+        return value
 
 
 class RevisionStatusReport(PhablyticsReport):
@@ -65,6 +85,7 @@ class RevisionStatusReport(PhablyticsReport):
         )
 
         # place revisions into buckets
+        revisions_wip = []
         revisions_to_review = []
         revisions_with_blocks = []
         revisions_additional_approval = []
@@ -74,8 +95,7 @@ class RevisionStatusReport(PhablyticsReport):
             if revision.meets_acceptance_criteria:
                 revisions_accepted.append(revision)
             elif revision.is_wip:
-                # skip WIP
-                pass
+                revisions_wip.append(revision)
             elif revision.num_blockers > 0:
                 revisions_with_blocks.append(revision)
             elif 0 < revision.num_acceptors < REVISION_ACCEPTANCE_THRESHOLD:
@@ -109,6 +129,7 @@ class RevisionStatusReport(PhablyticsReport):
                 revisions_blocked.append(revision)
 
         # finally, assign bucketed revisions
+        self.revisions_wip = revisions_wip
         self.revisions_to_review = revisions_to_review
         self.revisions_change_required = revisions_change_required
         self.revisions_blocked = revisions_blocked
@@ -181,91 +202,91 @@ class RevisionStatusReport(PhablyticsReport):
 
         report.append('')
 
+    def get_report_section_configs(self):
+        configs = [
+            # Revisions WIP
+            ReportSectionConfig(
+                revisions=self.revisions_wip,
+                emoji=':construction:',
+                suffix=f"{pluralize_verb('is', len(self.revisions_wip))} currently WIP",
+                order_asc=False,
+                slack_color='#ccccc',  # light gray
+                include_in_slack=False
+            ),
+            # Revisions with 0 reviews
+            ReportSectionConfig(
+                revisions=self.revisions_to_review,
+                emoji=':warning:',
+                suffix=f"{pluralize_verb('need', len(self.revisions_to_review))} to be reviewed",
+                order_asc=False,
+                # slack_color='warning'  # Slack-yellow, has an orange hue
+                slack_color='#f2c744'  # yellow
+            ),
+            # Revisions with team blockers - change required
+            ReportSectionConfig(
+                revisions=self.revisions_change_required,
+                emoji=':arrows_counterclockwise:',
+                suffix=f"{pluralize_verb('require', len(self.revisions_change_required))} changes",
+                order_asc=False,
+                slack_color='#e8912d'  # orange
+            ),
+            # Revisions with only external blockers
+            ReportSectionConfig(
+                revisions=self.revisions_blocked,
+                emoji=':no_entry_sign:',
+                suffix=f"{pluralize_verb('is', len(self.revisions_blocked))} blocked",
+                order_asc=False,
+                slack_color='danger'  # Slack red
+            ),
+            # Revisions with 1 approval
+            ReportSectionConfig(
+                revisions=self.revisions_additional_approval,
+                emoji=':pray:',
+                suffix=f"{pluralize_verb('need', len(self.revisions_additional_approval))} additional approvals",
+                order_asc=False,
+                slack_color='#439f30'  # blue
+            ),
+            # Revisions Accepted
+            ReportSectionConfig(
+                revisions=self.revisions_accepted,
+                emoji=':white_check_mark:',
+                suffix=f"{pluralize_verb('is', len(self.revisions_accepted))} accepted and ready to land",
+                order_asc=True,
+                slack_color='good',
+            )
+        ]
+
+        return configs
+
     def generate_slack_report(self):
         """Generates the Revision Status Report with Slack attachments
         """
         attachments = []
 
-        # Revisions with 0 reviews
-        num_revisions = len(self.revisions_to_review)
-        if num_revisions > 0:
-            report = []
-            count = 0
+        report_section_configs = self.get_report_section_configs()
 
-            for revision in sorted(self.revisions_to_review, key=lambda r: r.modified_ts, reverse=True):
-                count += 1
-                self._format_and_append_revision_to_report(report, revision, count)
+        def _build_report_section(report_section_config):
+            num_revisions = report_section_config.num_revisions
+            if num_revisions > 0:
+                report = []
+                count = 0
 
-            attachments.append({
-                'pretext': f":warning: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} to be reviewed*: _(newest first)_",
-                'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
-                # 'color': 'warning',  # Slack-yellow, has an orange hue
-                'color': '#f2c744',
-            })
+                for revision in sorted(report_section_config.revisions, key=lambda r: r.modified_ts, reverse=not report_section_config.order_asc):
+                    count += 1
+                    self._format_and_append_revision_to_report(report, revision, count)
 
-        # Revisions with team blockers - change required
-        num_revisions = len(self.revisions_change_required)
-        if num_revisions > 0:
-            report = []
-            count = 0
+                attachments.append({
+                    'pretext': f"{report_section_config.emoji} *{num_revisions} {pluralize_noun('Diff', num_revisions)} {report_section_config.suffix}*: _({report_section_config.order_str})_",
+                    'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
+                    'color': report_section_config.slack_color,
+                })
 
-            for revision in sorted(self.revisions_change_required, key=lambda r: r.modified_ts, reverse=True):
-                count += 1
-                self._format_and_append_revision_to_report(report, revision, count)
-
-            attachments.append({
-                'pretext': f":arrows_counterclockwise: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('require', num_revisions)} changes*: _(newest first)_",
-                'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
-                'color': '#e8912d',  # orange
-            })
-
-        # Revisions with only external blockers
-        num_revisions = len(self.revisions_blocked)
-        if num_revisions > 0:
-            report = []
-            count = 0
-
-            for revision in sorted(self.revisions_blocked, key=lambda r: r.modified_ts, reverse=True):
-                count += 1
-                self._format_and_append_revision_to_report(report, revision, count)
-
-            attachments.append({
-                'pretext': f":no_entry_sign: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('is', num_revisions)} blocked*: _(newest first)_",
-                'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
-                'color': 'danger',
-            })
-
-        # Revisions with 1 approval
-        num_revisions = len(self.revisions_additional_approval)
-        if num_revisions > 0:
-            report = []
-            count = 0
-
-            for revision in sorted(self.revisions_additional_approval, key=lambda r: r.modified_ts, reverse=True):
-                count += 1
-                self._format_and_append_revision_to_report(report, revision, count)
-
-            attachments.append({
-                'pretext': f":pray: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} additional approvals*: _(newest first)_",
-                'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
-                'color': '#439fe0',  # blue
-            })
-
-        # Revisions Accepted
-        num_revisions = len(self.revisions_accepted)
-        if num_revisions > 0:
-            report = []
-            count = 0
-
-            for revision in sorted(self.revisions_accepted, key=lambda r: r.modified_ts):
-                count += 1
-                self._format_and_append_revision_to_report(report, revision, count)
-
-            attachments.append({
-                'pretext': f":white_check_mark: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('is', num_revisions)} accepted and ready to land*: _(oldest first)_",
-                'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
-                'color': 'good',
-            })
+        for report_section_config in report_section_configs:
+            if report_section_config.include_in_slack:
+                _build_report_section(report_section_config)
+            else:
+                # exclude sections that might be too noisy for Slack, but include in web
+                pass
 
         DIFF_PRESENT_MESSAGES = [
             "Let's review some diffs!",
@@ -300,80 +321,26 @@ class RevisionStatusReport(PhablyticsReport):
     def generate_text_report(self):
         lines = []
 
-        # Revisions with 0 reviews
-        num_revisions = len(self.revisions_to_review)
-        if num_revisions > 0:
-            report = []
-            count = 0
+        report_section_configs = self.get_report_section_configs()
 
-            for revision in sorted(self.revisions_to_review, key=lambda r: r.modified_ts, reverse=True):
-                count += 1
-                self._format_and_append_revision_to_report(report, revision, count, slack=False)
+        def _build_report_section(report_section_config):
+            num_revisions = report_section_config.num_revisions
+            if num_revisions > 0:
+                report = []
+                count = 0
 
-            icon = emoji.emojize(':warning:')
-            lines.append(f"{icon}{HTML_ICON_SEPARATOR}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} to be reviewed**: *(newest first)*")
-            lines.append('')
-            lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))
+                for revision in sorted(report_section_config.revisions, key=lambda r: r.modified_ts, reverse=not report_section_config.order_asc):
+                    count += 1
+                    self._format_and_append_revision_to_report(report, revision, count, slack=False)
 
-        # Revisions with team blockers - change required
-        num_revisions = len(self.revisions_change_required)
-        if num_revisions > 0:
-            report = []
-            count = 0
+                icon = emoji.emojize(report_section_config.emoji, use_aliases=True)
 
-            for revision in sorted(self.revisions_change_required, key=lambda r: r.modified_ts, reverse=True):
-                count += 1
-                self._format_and_append_revision_to_report(report, revision, count, slack=False)
+                lines.append(f"{icon}{HTML_ICON_SEPARATOR}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {report_section_config.suffix}**: *({report_section_config.order_str})*")
+                lines.append('')
+                lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))
 
-            icon = emoji.emojize(':arrows_counterclockwise:', use_aliases=True)
-            lines.append(f"{icon}{HTML_ICON_SEPARATOR}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('require', num_revisions)} changes**: *(newest first)*")
-            lines.append('')
-            lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))
-
-        # Revisions with only external blockers
-        num_revisions = len(self.revisions_blocked)
-        if num_revisions > 0:
-            report = []
-            count = 0
-
-            for revision in sorted(self.revisions_blocked, key=lambda r: r.modified_ts, reverse=True):
-                count += 1
-                self._format_and_append_revision_to_report(report, revision, count, slack=False)
-
-            icon = emoji.emojize(':no_entry_sign:', use_aliases=True)
-            lines.append(f"{icon}{HTML_ICON_SEPARATOR}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('is', num_revisions)} blocked**: *(newest first)*")
-            lines.append('')
-            lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))
-
-        # Revisions with 1 approval
-        num_revisions = len(self.revisions_additional_approval)
-        if num_revisions > 0:
-            report = []
-            count = 0
-
-            for revision in sorted(self.revisions_additional_approval, key=lambda r: r.modified_ts, reverse=True):
-                count += 1
-                self._format_and_append_revision_to_report(report, revision, count, slack=False)
-
-            icon = emoji.emojize(':pray:', use_aliases=True)
-            lines.append(f"{icon}{HTML_ICON_SEPARATOR}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} additional approvals**: *(newest first)*")
-            lines.append('')
-            lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))
-
-        # Revisions Accepted
-        num_revisions = len(self.revisions_accepted)
-        if num_revisions > 0:
-            report = []
-            count = 0
-
-            for revision in sorted(self.revisions_accepted, key=lambda r: r.modified_ts):
-                count += 1
-                self._format_and_append_revision_to_report(report, revision, count, slack=False)
-
-            icon = emoji.emojize(':white_check_mark:', use_aliases=True)
-            lines.append(f"{icon}{HTML_ICON_SEPARATOR}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('is', num_revisions)} accepted and ready to land**: *(oldest first)*")
-            lines.append('')
-            lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))
+        for report_section_config in report_section_configs:
+            _build_report_section(report_section_config)
 
         text_report = '\n'.join(lines)
         return text_report

@@ -22,6 +22,9 @@ from phablytics.classes import (
 from phablytics.constants import (
     MANIPHEST_STATUSES_OPEN,
     MANIPHEST_SUBTYPES,
+    REVISION_STATUSES_COMPLETED,
+    REVISION_STATUSES_IN_REVIEW,
+    REVISION_STATUSES_WIP,
 )
 from phablytics.settings import (
     CONDUIT_API_TOKEN,
@@ -112,15 +115,11 @@ def fetch_differential_revisions(
     https://secure.phabricator.com/conduit/method/differential.revision.search/
     """
     constraints = {
-        'statuses': [
-            # 'abandoned',
-            'accepted',
-            # 'changes-planned',
-            # 'draft',
-            'needs-review',
-            'needs-revision',
-            # 'published'
-        ],
+        'statuses': (
+            REVISION_STATUSES_WIP
+            + REVISION_STATUSES_IN_REVIEW
+            # + REVISION_STATUSES_COMPLETED
+        ),
     }
 
     if reviewer_phids:
