@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v3.3.0 (2022-09-09)
+- move revision statuses to constants
+- refactors and DRYs up report generation with `ReportSectionConfig`
+- adds WIP diffs section to RevisionStatusReport
+- adds flag `include_in_slack` for sections to include in Slack
+
 ## v3.2.0 (2022-07-26)
 - Updates to use explicitly set Conduit API token, Phabricator base URL, etc
 - Adds `/users` listing page and user profile page
