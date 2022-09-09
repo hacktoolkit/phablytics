@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v3.3.1 (2022-09-09)
+
+- updates Flask (>=2.1.3) and Flask-WTF (1.0.*)
+
 ## v3.3.0 (2022-09-09)
 - move revision statuses to constants
 - refactors and DRYs up report generation with `ReportSectionConfig`
