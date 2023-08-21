@@ -145,7 +145,7 @@ def fetch_differential_revisions(
 
 
 def get_maniphest_tasks(constraints, order=None):
-    """Get Maniphest tasksa
+    """Get Maniphest tasks
     https://secure.phabricator.com/conduit/method/maniphest.search/
     """
     tasks = []
