@@ -58,14 +58,6 @@ def get_report_types():
     return report_types
 
 
-@dataclass
-class SlackMessage:
-    text: str = None
-    attachments: list = field(default_factory=list)
-    username: str = None
-    emoji: str = None
-
-
 def pluralize_noun(noun, count):
     """Adds 's' to `noun` depending on `count`
     """

@@ -1,12 +1,13 @@
 # Python Standard Library Imports
+import typing as T
 from collections import namedtuple
+
+# Third Party (PyPI) Imports
+from htk.utils.slack import SlackMessage
 
 # Phablytics Imports
 from phablytics.reports.base import PhablyticsReport
-from phablytics.reports.utils import (
-    SlackMessage,
-    pluralize_noun,
-)
+from phablytics.reports.utils import pluralize_noun
 from phablytics.utils import (
     get_maniphest_tasks_by_project_name,
     get_project_columns_by_project_name,
@@ -74,7 +75,7 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
 
         self.report_sections = report_sections
 
-    def generate_slack_report(self):
+    def generate_slack_report(self) -> T.List[SlackMessage]:
         colors = [
             '#333333',
             '#666666',
@@ -109,16 +110,18 @@ class UpcomingProjectTasksDueReport(PhablyticsReport):
                 '_All caught up -- there are no tasks for this section._'
             )
 
-        report = SlackMessage(
-            text=slack_text,
-            attachments=attachments,
-            username=self.slack_username,
-            emoji=self.slack_emoji
-        )
+        report = [
+            SlackMessage(
+                text=slack_text,
+                attachments=attachments,
+                username=self.slack_username,
+                icon_emoji=self.slack_emoji
+            ),
+        ]
 
         return report
 
-    def generate_text_report(self):
+    def generate_text_report(self) -> str:
         lines = []
         lines.append(f'**{self.project_name} - {self.HEADING}** *({self.timeline})*')
         lines.append('')

@@ -4,12 +4,16 @@ import random
 
 # Third Party (PyPI) Imports
 import emoji
+from htk.utils.slack import SlackMessage
 
 # Phablytics Imports
-from phablytics.reports.base import PhablyticsReport
-from phablytics.reports.constants import HTML_ICON_SEPARATOR
+from phablytics.reports.constants import (
+    DIFF_ABSENT_MESSAGES,
+    DIFF_PRESENT_MESSAGES,
+    HTML_ICON_SEPARATOR,
+)
+from phablytics.reports.revision_status import RevisionStatusReport
 from phablytics.reports.utils import (
-    SlackMessage,
     pluralize_noun,
     pluralize_verb,
 )
@@ -26,7 +30,7 @@ from phablytics.utils import (
 # isort: off
 
 
-class GroupReviewStatusReport(PhablyticsReport):
+class GroupReviewStatusReport(RevisionStatusReport):
     """The Group Review Status Report shows a list of Diffs with
     particular reviewers added.
 
@@ -34,25 +38,7 @@ class GroupReviewStatusReport(PhablyticsReport):
     maintained by a group of core developers.
     """
     def __init__(self, *args, **kwargs):
-        self.repo_phids = []
-        self.user_phids = []
-
-        self.repos_lookup = None
-        self.users_lookup = None
-
         super(GroupReviewStatusReport, self).__init__(*args, **kwargs)
-
-    def _add_users(self, phids):
-        self.user_phids.extend(phids)
-
-    def _add_repo(self, phid):
-        self.repo_phids.append(phid)
-
-    def _lookup_phids(self):
-        """Build lookup tables for User and Repo phids in batch
-        """
-        self.users_lookup = get_users_by_phid(self.user_phids)
-        self.repos_lookup = get_repos_by_phid(self.repo_phids)
 
     def _prepare_report(self):
         """Prepares the Revision Status Report
@@ -139,68 +125,6 @@ class GroupReviewStatusReport(PhablyticsReport):
         self.revisions_additional_approval = revisions_additional_approval
         self.revisions_accepted = revisions_accepted
 
-    def _get_phid_username(self, phid):
-        user = self.users_lookup[phid]
-        return user.name
-
-    def _format_user_phid(self, phid, slack=True):
-        user = self.users_lookup[phid]
-        if slack:
-            formatted = f'*<{user.profile_url}|{user.name}>*'
-        else:
-            formatted = f'**[{user.name}]({user.profile_url})**'
-        return formatted
-
-    def _format_and_append_revision_to_report(self, report, revision, count, slack=True):
-        repo = self.repos_lookup[revision.repo_phid]
-        if slack:
-            repo_link = f'<{repo.repository_url}|{repo.slug}>'
-        else:
-            repo_link = f'[{repo.slug}]({repo.repository_url})'
-
-        acceptors = [f'{self._format_user_phid(phid, slack=slack)}' for phid in revision.group_acceptor_phids]
-        blockers = [f'{self._format_user_phid(phid, slack=slack)}' for phid in revision.group_blocker_phids]
-
-        MAX_LENGTH = 50
-        revision_title = revision.title if len(revision.title) < MAX_LENGTH else (revision.title[:MAX_LENGTH - 3] + '...')
-
-        if slack:
-            item = f'{count}. <{revision.url}|{revision.revision_id}> - `{repo_link}` - _{revision_title}_ by {self._format_user_phid(revision.author_phid, slack=slack)}'  # noqa
-        else:
-            item = f'{count}. [{revision.revision_id}]({revision.url}) - <code>{repo_link}</code> - *{revision_title}* by {self._format_user_phid(revision.author_phid, slack=slack)}'  # noqa
-        report.append(item)
-
-        reviewers_msg = []
-
-        if len(acceptors) > 0:
-            icon = ':heavy_check_mark:'
-            icon_separator = ' ' if slack else HTML_ICON_SEPARATOR
-
-            if not slack:
-                icon = emoji.emojize(icon, use_aliases=True)
-
-            reviewers_msg.append(f"{icon}{icon_separator}{', '.join(acceptors)}")
-
-        if len(blockers) > 0:
-            if len(reviewers_msg) > 0:
-                reviewers_msg.append('; ')
-            else:
-                pass
-
-            icon = ':no_entry_sign:'
-            icon_separator = ' ' if slack else HTML_ICON_SEPARATOR
-
-            if not slack:
-                icon = emoji.emojize(icon, use_aliases=True)
-
-            reviewers_msg.append(f"{icon}{icon_separator}{', '.join(blockers)}")
-
-        if len(reviewers_msg) > 0:
-            separator = (' ' * 4) if slack else ('&nbsp;' * 4)
-            report.append(f"{separator}{''.join(reviewers_msg)}")
-
-        report.append('')
-
     def generate_slack_report(self):
         """Generates the Revision Status Report with Slack attachments
         """
@@ -281,7 +205,7 @@ class GroupReviewStatusReport(PhablyticsReport):
                 self._format_and_append_revision_to_report(report, revision, count)
 
             attachments.append({
-                'pretext': f":pray: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} additional approvals*: _(newest first)_",
+                'pretext': f":mag: *{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} additional approvals*: _(newest first)_",
                 'text': '\n'.join(report).encode('utf-8').decode('utf-8'),
                 'color': '#439fe0',  # blue
             })
@@ -302,34 +226,7 @@ class GroupReviewStatusReport(PhablyticsReport):
                 'color': 'good',
             })
 
-        DIFF_PRESENT_MESSAGES = [
-            "Let's review some diffs!",
-            "It's code review time!",
-        ]
-
-        DIFF_ABSENT_MESSAGES = [
-            # "It's code review time... but what a shame, there are no diffs to review :disappointed:. Let us write more code!",
-            "It's code review time... and all the diffs have already been reviewed :tada:. Let's write more code!",
-            'There are no pending code reviews. Enjoy the extra time! :sunglasses:',
-        ]
-
-        web_url = self.web_url
-
-        context = {
-            'here': '<!here> ' if len(attachments) > 0 else '',
-            'greeting': 'Greetings!',
-            'message': random.choice(DIFF_PRESENT_MESSAGES) if len(attachments) > 0 else random.choice(DIFF_ABSENT_MESSAGES),
-            'web_link': f'\n<{web_url}|View in web>' if web_url else '',
-        }
-
-        slack_text = 'Greetings Team!\n\n%(message)s\n%(web_link)s' % context
-
-        report = SlackMessage(
-            text=slack_text,
-            attachments=attachments,
-            username=self.slack_username,
-            emoji=self.slack_emoji
-         )
+        report = self._build_slack_report_from_attachments(attachments)
         return report
 
     def generate_text_report(self):
@@ -405,7 +302,7 @@ class GroupReviewStatusReport(PhablyticsReport):
                 count += 1
                 self._format_and_append_revision_to_report(report, revision, count, slack=False)
 
-            icon = emoji.emojize(':pray:', use_aliases=True)
+            icon = emoji.emojize(':mag:', use_aliases=True)
             lines.append(f"{icon}{HTML_ICON_SEPARATOR}**{num_revisions} {pluralize_noun('Diff', num_revisions)} {pluralize_verb('need', num_revisions)} additional approvals**: *(newest first)*")
             lines.append('')
             lines.append('\n'.join(report).encode('utf-8').decode('utf-8'))

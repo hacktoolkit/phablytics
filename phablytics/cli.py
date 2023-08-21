@@ -3,7 +3,7 @@ import argparse
 import pprint
 
 # Third Party (PyPI) Imports
-from htk import slack_message
+from htk.utils.slack import send_messages_as_thread
 
 # Local Imports
 from .reports.utils import (
@@ -40,13 +40,7 @@ class PhablyticsCLI:
                 report = report_class(report_config).generate_report()
                 if report_config.slack:
                     slack_channel = report_config.slack_channel
-                    slack_message(
-                        text=report.text,
-                        attachments=report.attachments,
-                        channel=slack_channel,
-                        username=report.username,
-                        icon_emoji=report.emoji
-                    )
+                    send_messages_as_thread(report, channel=slack_channel)
                 else:
                     print(report)
             else:

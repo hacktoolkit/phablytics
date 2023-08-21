@@ -1,6 +1,8 @@
+# Third Party (PyPI) Imports
+from htk.utils.slack import SlackMessage
+
 # Phablytics Imports
 from phablytics.reports.base import PhablyticsReport
-from phablytics.reports.utils import SlackMessage
 from phablytics.utils import (
     get_maniphest_tasks_by_owners,
     get_users_by_username,
@@ -59,12 +61,14 @@ class RecentTasksReport(PhablyticsReport):
     def generate_slack_report(self):
         text_report = self.generate_text_report()
         text = '```\n%s\n```' % text_report
-        report = SlackMessage(
-            text=text,
-            attachments=None,
-            username=self.slack_username,
-            emoji=self.slack_emoji
-        )
+        report = [
+            SlackMessage(
+                text=text,
+                attachments=None,
+                username=self.slack_username,
+                icon_emoji=self.slack_emoji
+            ),
+        ]
         return report
 
     def generate_html_report(self):

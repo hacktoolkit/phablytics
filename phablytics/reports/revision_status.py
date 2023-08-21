@@ -1,16 +1,21 @@
 # Python Standard Library Imports
 import datetime
 import random
+import typing as T
 from dataclasses import dataclass
 
 # Third Party (PyPI) Imports
 import emoji
+from htk.utils.slack import SlackMessage
 
 # Phablytics Imports
 from phablytics.reports.base import PhablyticsReport
-from phablytics.reports.constants import HTML_ICON_SEPARATOR
+from phablytics.reports.constants import (
+    DIFF_ABSENT_MESSAGES,
+    DIFF_PRESENT_MESSAGES,
+    HTML_ICON_SEPARATOR,
+)
 from phablytics.reports.utils import (
-    SlackMessage,
     pluralize_noun,
     pluralize_verb,
 )
@@ -241,7 +246,7 @@ class RevisionStatusReport(PhablyticsReport):
             # Revisions with 1 approval
             ReportSectionConfig(
                 revisions=self.revisions_additional_approval,
-                emoji=':pray:',
+                emoji=':mag:',
                 suffix=f"{pluralize_verb('need', len(self.revisions_additional_approval))} additional approvals",
                 order_asc=False,
                 slack_color='#439f30'  # blue
@@ -258,7 +263,7 @@ class RevisionStatusReport(PhablyticsReport):
 
         return configs
 
-    def generate_slack_report(self):
+    def generate_slack_report(self) -> T.List[SlackMessage]:
         """Generates the Revision Status Report with Slack attachments
         """
         attachments = []
@@ -288,37 +293,49 @@ class RevisionStatusReport(PhablyticsReport):
                 # exclude sections that might be too noisy for Slack, but include in web
                 pass
 
-        DIFF_PRESENT_MESSAGES = [
-            "Let's review some diffs!",
-            "It's code review time!",
-        ]
+        report = self._build_slack_report_from_attachments(attachments)
+        return report
 
-        DIFF_ABSENT_MESSAGES = [
-            # "It's code review time... but what a shame, there are no diffs to review :disappointed:. Let us write more code!",
-            "It's code review time... and all the diffs have already been reviewed :tada:. Let's write more code!",
-            'There are no pending code reviews. Enjoy the extra time! :sunglasses:',
-        ]
+    def _build_slack_report_from_attachments(self, attachments):
+        def _summarize_attachment(attachment):
+            pretext = attachment['pretext']
+            icon, text = pretext.split(' ', 1)
+            summary = '• {} {}'.format(
+                icon,
+                text.rsplit(':', 1)[0].removeprefix('*').removesuffix('*'),
+            )
+            return summary
 
-        web_url = self.web_url
 
         context = {
             'here': '<!here> ' if len(attachments) > 0 else '',
             'greeting': 'Greetings!',
             'message': random.choice(DIFF_PRESENT_MESSAGES) if len(attachments) > 0 else random.choice(DIFF_ABSENT_MESSAGES),
-            'web_link': f'\n<{web_url}|View in web>' if web_url else '',
+            'summary': '\n'.join(map(_summarize_attachment, attachments)),
+            'web_link': f' or <{self.web_url}|view in web>' if self.web_url else '',
         }
 
-        slack_text = 'Greetings Team!\n\n%(message)s\n%(web_link)s' % context
+        slack_text = 'Greetings Team!\n\n%(message)s\n\n%(summary)s\n\nSee details in thread%(web_link)s.' % context
 
-        report = SlackMessage(
-            text=slack_text,
-            attachments=attachments,
-            username=self.slack_username,
-            emoji=self.slack_emoji
-         )
+        report = [
+            # display summary in first message
+            SlackMessage(
+                text=slack_text,
+                username=self.slack_username,
+                icon_emoji=self.slack_emoji
+            ),
+        ] + [
+            # display details in thread
+            SlackMessage(
+                attachments=[attachment],
+                username=self.slack_username,
+                icon_emoji=self.slack_emoji
+            )
+            for attachment in attachments
+        ]
         return report
 
-    def generate_text_report(self):
+    def generate_text_report(self) -> str:
         lines = []
 
         report_section_configs = self.get_report_section_configs()

@@ -1,8 +1,13 @@
 # Python Standard Library Imports
+import typing as T
 from dataclasses import asdict
 
 # Third Party (PyPI) Imports
 import markdown
+from htk.utils.slack import SlackMessage
+
+
+# isort: off
 
 
 class PhablyticsReport:
@@ -23,12 +28,11 @@ class PhablyticsReport:
 
     @property
     def web_url(self):
-        # Phablytics Imports
         from phablytics.web.reports.utils import get_report_url
         url = get_report_url(self.name)
         return url
 
-    def generate_report(self, *args, **kwargs):
+    def generate_report(self, *args, **kwargs) -> T.Union[T.List[SlackMessage], str]:
         """The main function to generate a report
 
         Subclasses MAY override this method
@@ -44,14 +48,14 @@ class PhablyticsReport:
 
         return report
 
-    def generate_slack_report(self):
+    def generate_slack_report(self) -> T.List[SlackMessage]:
         """Generates a Slack report
 
         Subclasses MUST override this method
         """
         raise Exception('Not implemented')
 
-    def generate_text_report(self):
+    def generate_text_report(self) -> str:
         """Generates a text report
 
         Subclasses MAY override this method
@@ -62,23 +66,25 @@ class PhablyticsReport:
         slack_report = self.generate_slack_report()
 
         report = []
-        report.append(slack_report.text)
-        report.append('')
 
-        count = 0
-        for attachment in slack_report.attachments:
-            if count > 0:
-                report.append('')
+        for slack_message in slack_report:
+            report.append(slack_report.text)
+            report.append('')
 
-            report.append(attachment.get('pretext', ''))
-            report.append(attachment['text'])
-            count += 1
+            count = 0
+            for attachment in slack_report.attachments:
+                if count > 0:
+                    report.append('')
+
+                report.append(attachment.get('pretext', ''))
+                report.append(attachment['text'])
+                count += 1
 
         report_string = '\n'.join(report).encode('utf-8').decode('utf-8',)
 
         return report_string
 
-    def generate_html_report(self):
+    def generate_html_report(self) -> str:
         """Generates an HTML report
 
         Subclasses MAY override this method

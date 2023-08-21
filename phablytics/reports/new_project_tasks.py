@@ -2,12 +2,12 @@
 import datetime
 from collections import namedtuple
 
+# Third Party (PyPI) Imports
+from htk.utils.slack import SlackMessage
+
 # Phablytics Imports
 from phablytics.reports.base import PhablyticsReport
-from phablytics.reports.utils import (
-    SlackMessage,
-    pluralize_noun,
-)
+from phablytics.reports.utils import pluralize_noun
 from phablytics.utils import get_maniphest_tasks_by_project_name
 
 
@@ -98,12 +98,14 @@ class NewProjectTasksReport(PhablyticsReport):
                 '_All caught up -- there are no tasks for this section._'
             )
 
-        report = SlackMessage(
-            text=slack_text,
-            attachments=attachments,
-            username=self.slack_username,
-            emoji=self.slack_emoji
-        )
+        report = [
+            SlackMessage(
+                text=slack_text,
+                attachments=attachments,
+                username=self.slack_username,
+                icon_emoji=self.slack_emoji
+            ),
+        ]
 
         return report
 
