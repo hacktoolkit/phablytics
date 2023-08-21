@@ -1,6 +1,28 @@
 # Python Standard Library Imports
 import calendar
 import datetime
+import math
+import time
+import typing as T
+
+
+def hours_ago(ts: T.Optional[int] = None) -> T.Optional[int]:
+    """Returns the number of hours ago `ts` represents
+
+    Rounds up to the nearest whole hour
+    """
+    if ts is None:
+        hours = None
+    else:
+        now = time.time()
+        if ts > now:
+            raise Exception('Cannot compute hours ago for timestamp in the future')
+
+        d_seconds = math.ceil(now - ts)
+        td = datetime.timedelta(seconds=d_seconds)
+        hours = td.days * 24 + math.ceil(td.seconds / 3600)
+
+    return hours
 
 
 def start_of_quarter(dt):

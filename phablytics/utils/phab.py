@@ -199,11 +199,20 @@ def get_maniphest_tasks_by_owners(owner_phids):
 def get_maniphest_tasks_by_project_name(project_name, column_phids=None, order=None):
     """Get Maniphest tasks for a project
     """
-    project = get_project_by_name(project_name)
+    tasks = get_maniphest_tasks_by_project_names([project_name], column_phids=column_phids, order=order)
+    return tasks
+
+
+def get_maniphest_tasks_by_project_names(project_names, column_phids=None, order=None):
+    """Get Maniphest tasks for a list of projects
+
+    The search criteria will be AND for all projects.
+    """
+    projects = [get_project_by_name(project_name) for project_name in project_names]
 
     constraints = {
         'projects': [
-            project.phid,
+            project.phid for project in projects
         ],
         'statuses': MANIPHEST_STATUSES_OPEN,
     }

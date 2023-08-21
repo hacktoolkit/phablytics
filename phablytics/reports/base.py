@@ -6,6 +6,10 @@ from dataclasses import asdict
 import markdown
 from htk.utils.slack import SlackMessage
 
+# Phablytics Imports
+from phablytics.repos import report_last_run_repo
+from phablytics.utils import hours_ago
+
 
 # isort: off
 
@@ -32,6 +36,21 @@ class PhablyticsReport:
         url = get_report_url(self.name)
         return url
 
+    @property
+    def last_run_timestamp(self):
+        ts = report_last_run_repo.get_last_run(self.report_config.name)
+        return ts
+
+    @property
+    def last_run_hours_ago(self) -> T.Optional[int]:
+        last_run_timestamp = self.last_run_timestamp
+        if last_run_timestamp is None:
+            hours = None
+        else:
+            hours = hours_ago(last_run_timestamp)
+
+        return hours
+
     def generate_report(self, *args, **kwargs) -> T.Union[T.List[SlackMessage], str]:
         """The main function to generate a report
 
@@ -45,6 +64,11 @@ class PhablyticsReport:
             report = self.generate_html_report()
         else:
             report = self.generate_text_report()
+
+        save_last_run = kwargs.pop('save_last_run', False)
+        if save_last_run:
+            report_last_run_repo.save_last_run(self.report_config.name)
+            # print(f'Last run at: {self.last_run_timestamp} / {self.last_run_hours_ago} hours ago')
 
         return report
 

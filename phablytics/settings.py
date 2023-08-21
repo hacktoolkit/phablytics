@@ -51,6 +51,8 @@ class ReportConfig:
     threshold_days: int = 14
     # NewProjectTasks
     project_names: list = field(default_factory=list)
+    projects_and_vs_or: str = 'or'
+    use_last_run_timestamp: bool = False
     # UpcomingProjectTasksDue, UrgentAndOverdueTasks, NewProjectTasks
     project_name: str = None
     column_names: list = field(default_factory=list)

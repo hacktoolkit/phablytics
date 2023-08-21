@@ -37,7 +37,7 @@ class PhablyticsCLI:
             report_config = get_report_config(self.report_name, self)
             report_class = self.report_types.get(report_config.report_type)
             if report_class:
-                report = report_class(report_config).generate_report()
+                report = report_class(report_config).generate_report(save_last_run=True)
                 if report_config.slack:
                     slack_channel = report_config.slack_channel
                     send_messages_as_thread(report, channel=slack_channel)
